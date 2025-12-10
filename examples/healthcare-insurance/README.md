@@ -115,7 +115,7 @@ Adjust props based on `@ethora/chat-component` documentation and your environmen
 
 # Step-by-step with screenshots
 
-Download or clone this whole repository into a new folder locally or on your dev server.
+* Download or clone this whole repository into a new folder locally or on your dev server.
 
 You should be in the root folder where you will see this including "src" and "examples" folders: 
 
@@ -124,16 +124,20 @@ You should be in the root folder where you will see this including "src" and "ex
 
 
 
-Go to ethora.com, create your app and copy your App (project) credentials from API tab:
+* Go to ethora.com, create your app and copy your App (project) credentials from API tab:
 
 <img width="2920" height="2252" alt="CleanShot 2025-12-10 at 13 28 50@2x" src="https://github.com/user-attachments/assets/cce12f60-3d30-4e2b-a830-ca4846e01642" />
 
 
-Download / clone backend and frontend example files:
+* Download / clone backend and frontend example files:
 
 <img width="844" height="216" alt="CleanShot 2025-12-10 at 13 27 13@2x" src="https://github.com/user-attachments/assets/7febd193-3f33-4392-b0bf-365cd56571c2" />
 
+* NPM install in root folder:
 
+<img width="1374" height="318" alt="CleanShot 2025-12-10 at 13 43 07@2x" src="https://github.com/user-attachments/assets/7aed103d-8a53-4a40-bf8c-306c63b8014c" />
+
+  
 
 
 
