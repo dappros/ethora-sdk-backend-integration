@@ -144,6 +144,13 @@ You should be in the root folder where you will see this including "src" and "ex
 <img width="2246" height="244" alt="CleanShot 2025-12-10 at 14 09 28@2x" src="https://github.com/user-attachments/assets/c0c83418-6955-45e5-b4a8-e6e447c355f3" />
 
 
+* Open another terminal tab, go to frontend sample folder and do npm install there:
+
+> cd examples/healthcare-insurance/demo-frontend
+> npm install
+
+<img width="2750" height="494" alt="CleanShot 2025-12-10 at 14 19 51@2x" src="https://github.com/user-attachments/assets/d7c3af4c-3342-48e7-a70b-45172d07b09a" />
+
 
 
 
