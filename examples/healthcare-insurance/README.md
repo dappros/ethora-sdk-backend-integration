@@ -112,3 +112,62 @@ Adjust props based on `@ethora/chat-component` documentation and your environmen
 - For existing cases: call `createChatRoom` once per case before granting user access.
 - Add retries/backoff around API calls and log failures for manual review.
 
+
+# Step-by-step with screenshots
+
+* Download or clone this whole repository into a new folder locally or on your dev server.
+
+You should be in the root folder where you will see this including "src" and "examples" folders: 
+
+<img width="1396" height="78" alt="CleanShot 2025-12-10 at 13 40 08@2x" src="https://github.com/user-attachments/assets/fda3fed2-8411-47b8-8994-04e706750dc5" />
+
+
+
+
+* Go to ethora.com, create your app and copy your App (project) credentials from API tab:
+
+<img width="2920" height="2252" alt="CleanShot 2025-12-10 at 13 28 50@2x" src="https://github.com/user-attachments/assets/cce12f60-3d30-4e2b-a830-ca4846e01642" />
+
+
+* Download / clone backend and frontend example files:
+
+<img width="844" height="216" alt="CleanShot 2025-12-10 at 13 27 13@2x" src="https://github.com/user-attachments/assets/7febd193-3f33-4392-b0bf-365cd56571c2" />
+
+* NPM install in root folder:
+
+<img width="1374" height="318" alt="CleanShot 2025-12-10 at 13 43 07@2x" src="https://github.com/user-attachments/assets/7aed103d-8a53-4a40-bf8c-306c63b8014c" />
+
+* Launch backend app:
+
+> npx ts-node examples/healthcare-insurance/demo-backend.ts
+
+<img width="2246" height="244" alt="CleanShot 2025-12-10 at 14 09 28@2x" src="https://github.com/user-attachments/assets/c0c83418-6955-45e5-b4a8-e6e447c355f3" />
+
+
+* Open another terminal tab, go to frontend sample folder and do npm install there:
+
+> cd examples/healthcare-insurance/demo-frontend
+> npm install
+
+<img width="2750" height="494" alt="CleanShot 2025-12-10 at 14 19 51@2x" src="https://github.com/user-attachments/assets/d7c3af4c-3342-48e7-a70b-45172d07b09a" />
+
+* Do "npm run dev" in the frontend app folder
+
+> npm run dev
+
+You should see Vite running:
+
+<img width="720" height="282" alt="CleanShot 2025-12-10 at 14 21 04@2x" src="https://github.com/user-attachments/assets/05448b9b-6729-4393-bfdc-56ffe4ef5983" />
+
+
+
+
+
+
+
+
+
+
+
+
+
