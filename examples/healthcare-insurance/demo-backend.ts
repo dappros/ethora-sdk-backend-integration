@@ -11,13 +11,25 @@
  *   ETHORA_CHAT_APP_ID
  *   ETHORA_CHAT_APP_SECRET
  *
+ * .env loading:
+ *   - Auto-loads examples/healthcare-insurance/.env.local if present
+ *   - Falls back to process env
+ *
  * Run (from repo root):
  *   npm install express @types/express ts-node
  *   npx ts-node examples/healthcare-insurance/demo-backend.ts
  */
 
+import path from "path";
+import { config as loadEnv } from "dotenv";
 import express, { Request, Response } from "express";
 import { getChatRepositoryImpl } from "../../src";
+
+// Load .env.local from this example folder if present, else fall back to process env
+loadEnv({
+  path: path.resolve(process.cwd(), "examples/healthcare-insurance/.env.local"),
+});
+loadEnv(); // also load default .env if present
 
 type Role = "admin" | "practitioner" | "patient";
 

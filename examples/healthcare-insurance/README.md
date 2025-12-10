@@ -14,11 +14,10 @@ This example shows how to integrate Ethora chat into an existing healthcare/insu
   - `ETHORA_CHAT_API_URL` (e.g., `https://api.ethoradev.com`)
   - `ETHORA_CHAT_APP_ID`
   - `ETHORA_CHAT_APP_SECRET`
-- Optional convenience: copy and edit `env.local.sample`, then export it before running:
+- Optional convenience: copy and edit `env.local.sample` (auto-loaded by backend if present):
   ```bash
   cp examples/healthcare-insurance/env.local.sample .env.local
   # edit .env.local with your real Ethora app id/secret (do not commit secrets)
-  export $(cat .env.local | xargs)  # loads into current shell
   ```
 - Install example deps (adds to this repo’s workspace):
   ```bash
@@ -60,9 +59,7 @@ npx ts-node examples/healthcare-insurance/demo-backend.ts
 ## Running backend and frontend together (quick start)
 From repo root, in two shells:
 ```bash
-# Shell 1: backend (requires env vars above)
-# If you created .env.local, load it first:
-# export $(cat .env.local | xargs)
+# Shell 1: backend (auto-loads examples/healthcare-insurance/.env.local if present)
 npx ts-node examples/healthcare-insurance/demo-backend.ts
 
 # Shell 2: frontend
