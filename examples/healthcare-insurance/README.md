@@ -16,7 +16,7 @@ This example shows how to integrate Ethora chat into an existing healthcare/insu
   - `ETHORA_CHAT_APP_SECRET`
 - Optional convenience: copy and edit `env.local.sample` (auto-loaded by backend if present):
   ```bash
-  cp examples/healthcare-insurance/env.local.sample .env.local
+  cp env.local.sample .env.local
   # edit .env.local with your real Ethora app id/secret (do not commit secrets)
   ```
 - Install example deps (adds to this repo’s workspace):
@@ -111,4 +111,25 @@ Adjust props based on `@ethora/chat-component` documentation and your environmen
 - Iterate over existing users: call `createUser` for each, then grant access to relevant cases with `grantUserAccessToChatRoom`.
 - For existing cases: call `createChatRoom` once per case before granting user access.
 - Add retries/backoff around API calls and log failures for manual review.
+
+
+# Step-by-step with screenshots
+
+Go to ethora.com, create your app and copy your App (project) credentials from API tab:
+
+<img width="2920" height="2252" alt="CleanShot 2025-12-10 at 13 28 50@2x" src="https://github.com/user-attachments/assets/cce12f60-3d30-4e2b-a830-ca4846e01642" />
+
+
+Download / clone backend and frontend example files:
+
+<img width="844" height="216" alt="CleanShot 2025-12-10 at 13 27 13@2x" src="https://github.com/user-attachments/assets/7febd193-3f33-4392-b0bf-365cd56571c2" />
+
+
+
+
+
+
+
+
+
 
