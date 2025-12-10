@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import Chat from "@ethora/chat-component";
+import { Chat } from "@ethora/chat-component";
 
 type Role = "admin" | "practitioner" | "patient";
 
