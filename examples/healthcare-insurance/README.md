@@ -14,6 +14,12 @@ This example shows how to integrate Ethora chat into an existing healthcare/insu
   - `ETHORA_CHAT_API_URL` (e.g., `https://api.ethoradev.com`)
   - `ETHORA_CHAT_APP_ID`
   - `ETHORA_CHAT_APP_SECRET`
+- Optional convenience: copy and edit `env.local.sample`, then export it before running:
+  ```bash
+  cp examples/healthcare-insurance/env.local.sample .env.local
+  # edit .env.local with your real Ethora app id/secret (do not commit secrets)
+  export $(cat .env.local | xargs)  # loads into current shell
+  ```
 - Install example deps (adds to this repo’s workspace):
   ```bash
   npm install express @types/express ts-node
@@ -55,12 +61,16 @@ npx ts-node examples/healthcare-insurance/demo-backend.ts
 From repo root, in two shells:
 ```bash
 # Shell 1: backend (requires env vars above)
+# If you created .env.local, load it first:
+# export $(cat .env.local | xargs)
 npx ts-node examples/healthcare-insurance/demo-backend.ts
 
 # Shell 2: frontend
 cd examples/healthcare-insurance/demo-frontend
 npm install
-echo "VITE_BACKEND_URL=http://localhost:4000" > .env.local
+# Copy sample if needed (frontend reads .env.local automatically):
+# cp ../env.local.sample .env.local
+# Then edit .env.local to point to backend URL.
 npm run dev  # open printed URL (default http://localhost:5173)
 ```
 
