@@ -1,0 +1,94 @@
+# Healthcare / Insurance integration walkthrough
+
+This example shows how to integrate Ethora chat into an existing healthcare/insurance backend where Admins/Practitioners use a portal and Patients use a mobile/web app. It covers backend wiring, token issuance, chat room provisioning, and frontend embedding pointers.
+
+## Scenario mapping
+- Domain: case/claim/encounter ID → `workspaceId` used for chat room name.
+- Users: Admin, Practitioner, Patient → `userId` matches your backend’s user identifier.
+- Room name (JID): `<appId>_<workspaceId>@conference.xmpp.ethoradev.com` from `createChatName(workspaceId, true)`.
+- Auth: server-side JWTs signed with `ETHORA_CHAT_APP_SECRET` via `createChatUserJwtToken(userId)`.
+
+## Prerequisites
+- Node.js 18+
+- Ethora app credentials set as env vars:
+  - `ETHORA_CHAT_API_URL` (e.g., `https://api.ethoradev.com`)
+  - `ETHORA_CHAT_APP_ID`
+  - `ETHORA_CHAT_APP_SECRET`
+- Install example deps (adds to this repo’s workspace):
+  ```bash
+  npm install express @types/express ts-node
+  ```
+
+## Files in this example
+- `demo-backend.ts`: Minimal Express API that provisions chat rooms per case, creates users, grants access, issues client tokens, and exposes helper endpoints.
+
+## How the backend flow works
+1) Case created (or “Enable chat” clicked):
+   - `createChatRoom(workspaceId)`
+   - For each participant (Admin/Practitioner/Patient): `createUser(userId, profile)` then `grantUserAccessToChatRoom(workspaceId, userId)`
+   - Optional: `grantChatbotAccessToChatRoom(workspaceId)`
+2) Client token issuance:
+   - Endpoint returns `createChatUserJwtToken(userId)` for the portal or mobile app.
+3) Frontend embed:
+   - Web portal: use `@ethora/chat-component` or the web snippet (see https://github.com/dappros/ethora-sdk-web-snippet). Pass `roomJID` from `createChatName(workspaceId, true)` and the client token.
+   - Mobile: use the React Native component with the same token/JID.
+4) Cleanup (optional):
+   - On case closure: `deleteChatRoom(workspaceId)` and `deleteUsers([...])` per your retention policy.
+
+## Running the demo backend
+From the repo root:
+```bash
+# Ensure env vars are set (replace with your Ethora app creds)
+export ETHORA_CHAT_API_URL=https://api.ethoradev.com
+export ETHORA_CHAT_APP_ID=your_app_id
+export ETHORA_CHAT_APP_SECRET=your_app_secret
+
+# Install deps once (adds express + ts-node locally)
+npm install express @types/express ts-node
+
+# Run the demo server
+npx ts-node examples/healthcare-insurance/demo-backend.ts
+# Server listens on http://localhost:4000
+```
+
+## API sketch (demo-backend.ts)
+- `POST /cases`  
+  Body: `{ caseId, participants: [{ userId, role, displayName? }], metadata? }`  
+  Creates room, creates users if needed, grants access, returns JID.
+- `POST /cases/:caseId/users`  
+  Body: `{ userId, role, displayName? }`  
+  Adds a participant, creates user if needed, grants access.
+- `GET /chat/token/:userId`  
+  Returns a client JWT for embedding in the chat component/snippet.
+- `GET /cases/:caseId/chat/jid`  
+  Returns full JID for the case.
+- `DELETE /cases/:caseId/chat`  
+  Deletes the chat room (returns reason if not found).
+- `DELETE /users`  
+  Body: `{ userIds: string[] }` bulk deletes users.
+
+## Minimal portal embedding hint
+In your portal tab/component, fetch the client token for the logged-in user and render the chat component/snippet:
+```tsx
+<Chat
+  roomJID={roomJidFromApi}
+  user={{ token: clientTokenFromBackend }}
+  config={{
+    xmppSettings: {
+      devServer: "wss://xmpp.ethoradev.com:5443/ws",
+      host: "xmpp.ethoradev.com",
+      conference: "conference.xmpp.ethoradev.com",
+    },
+    baseUrl: "https://api.ethoradev.com/v1",
+    newArch: true,
+    refreshTokens: { enabled: true },
+  }}
+/>
+```
+Adjust props based on `@ethora/chat-component` documentation and your environment.
+
+## Migration/bulk import tips
+- Iterate over existing users: call `createUser` for each, then grant access to relevant cases with `grantUserAccessToChatRoom`.
+- For existing cases: call `createChatRoom` once per case before granting user access.
+- Add retries/backoff around API calls and log failures for manual review.
+
