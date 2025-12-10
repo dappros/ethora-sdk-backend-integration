@@ -432,7 +432,7 @@ The project uses strict TypeScript settings. See `tsconfig.json` for details.
 
 ## License
 
-MIT
+Apache 2.0
 
 ## Support
 
