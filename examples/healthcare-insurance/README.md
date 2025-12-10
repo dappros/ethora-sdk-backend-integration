@@ -137,7 +137,13 @@ You should be in the root folder where you will see this including "src" and "ex
 
 <img width="1374" height="318" alt="CleanShot 2025-12-10 at 13 43 07@2x" src="https://github.com/user-attachments/assets/7aed103d-8a53-4a40-bf8c-306c63b8014c" />
 
-  
+* Launch backend app:
+
+> npx ts-node examples/healthcare-insurance/demo-backend.ts
+
+<img width="2246" height="244" alt="CleanShot 2025-12-10 at 14 09 28@2x" src="https://github.com/user-attachments/assets/c0c83418-6955-45e5-b4a8-e6e447c355f3" />
+
+
 
 
 
