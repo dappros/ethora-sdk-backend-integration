@@ -151,6 +151,18 @@ You should be in the root folder where you will see this including "src" and "ex
 
 <img width="2750" height="494" alt="CleanShot 2025-12-10 at 14 19 51@2x" src="https://github.com/user-attachments/assets/d7c3af4c-3342-48e7-a70b-45172d07b09a" />
 
+* Do "npm run dev" in the frontend app folder
+
+> npm run dev
+
+You should see Vite running:
+
+<img width="720" height="282" alt="CleanShot 2025-12-10 at 14 21 04@2x" src="https://github.com/user-attachments/assets/05448b9b-6729-4393-bfdc-56ffe4ef5983" />
+
+
+
+
+
 
 
 
