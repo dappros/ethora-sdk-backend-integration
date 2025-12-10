@@ -16,7 +16,7 @@ This example shows how to integrate Ethora chat into an existing healthcare/insu
   - `ETHORA_CHAT_APP_SECRET`
 - Optional convenience: copy and edit `env.local.sample` (auto-loaded by backend if present):
   ```bash
-  cp examples/healthcare-insurance/env.local.sample .env.local
+  cp env.local.sample .env.local
   # edit .env.local with your real Ethora app id/secret (do not commit secrets)
   ```
 - Install example deps (adds to this repo’s workspace):
