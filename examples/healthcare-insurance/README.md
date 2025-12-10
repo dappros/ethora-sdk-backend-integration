@@ -51,6 +51,19 @@ npx ts-node examples/healthcare-insurance/demo-backend.ts
 # Server listens on http://localhost:4000
 ```
 
+## Running backend and frontend together (quick start)
+From repo root, in two shells:
+```bash
+# Shell 1: backend (requires env vars above)
+npx ts-node examples/healthcare-insurance/demo-backend.ts
+
+# Shell 2: frontend
+cd examples/healthcare-insurance/demo-frontend
+npm install
+echo "VITE_BACKEND_URL=http://localhost:4000" > .env.local
+npm run dev  # open printed URL (default http://localhost:5173)
+```
+
 ## API sketch (demo-backend.ts)
 - `POST /cases`  
   Body: `{ caseId, participants: [{ userId, role, displayName? }], metadata? }`  
