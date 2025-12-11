@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@ethora/chat-component": "^1.0.0",
+    "@ethora/chat-component": "^25.11.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -21,4 +21,3 @@
     "vite": "^5.4.8"
   }
 }
-

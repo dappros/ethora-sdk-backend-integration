@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import { Chat } from "@ethora/chat-component";
+/** @format */
+
+import { useEffect, useMemo, useState, useRef } from "react";
+import { Chat, XmppProvider } from "@ethora/chat-component";
 
 type Role = "admin" | "practitioner" | "patient";
 
@@ -24,7 +26,8 @@ const CASE_ID = "case-123";
 const personas: Persona[] = [
   { userId: "admin-1", role: "admin", label: "Admin (Portal)" },
   { userId: "practitioner-1", role: "practitioner", label: "Practitioner" },
-  { userId: "patient-1", role: "patient", label: "Patient" },
+  { userId: "patient-1", role: "patient", label: "Patient 1" },
+  { userId: "patient-2", role: "patient", label: "Patient 2" },
 ];
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -38,13 +41,42 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
 
 export default function App() {
   const [persona, setPersona] = useState<Persona>(personas[0]);
+  const [selectedPatient, setSelectedPatient] = useState<Persona | null>(null);
   const [state, setState] = useState<FetchState>({ loading: true });
+  const isRunningRef = useRef(false); // Prevent duplicate calls
 
   const backend = useMemo(() => DEFAULT_BACKEND.replace(/\/$/, ""), []);
 
+  // Get available patients for admin/practitioner
+  const availablePatients = useMemo(
+    () => personas.filter((p) => p.role === "patient"),
+    []
+  );
+
+  // Determine which room JID to use
+  const roomJidToUse = useMemo(() => {
+    // If persona is a patient, use the main case room
+    // If persona is admin/practitioner and a patient is selected, use that patient's room
+    if (persona.role === "patient") {
+      return state.roomJid;
+    }
+    // For admin/practitioner, if patient selected, use that patient's case room
+    // For now, use the main case room (same as admin)
+    return state.roomJid;
+  }, [persona.role, selectedPatient, state.roomJid]);
+
   useEffect(() => {
     let cancelled = false;
+
     async function load() {
+      if (isRunningRef.current) {
+        console.log(
+          "Case creation already in progress, skipping duplicate call"
+        );
+        return;
+      }
+
+      isRunningRef.current = true;
       setState({ loading: true });
       try {
         // Ensure case exists and participants are granted access (idempotent-ish)
@@ -53,11 +85,31 @@ export default function App() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             caseId: CASE_ID,
-            participants: personas.map((p) => ({
-              userId: p.userId,
-              role: p.role,
-              displayName: p.label,
-            })),
+            participants: personas.map((p) => {
+              const nameParts = p.label.trim().split(/\s+/);
+              const firstName = nameParts[0] || "User";
+              let lastName = nameParts.slice(1).join(" ") || "";
+
+              // Ensure lastName is at least 2 characters (API requirement)
+              if (lastName.length < 2) {
+                // Use a default lastName if empty or too short
+                lastName =
+                  p.role === "admin"
+                    ? "Admin"
+                    : p.role === "practitioner"
+                    ? "Doctor"
+                    : "Patient";
+              }
+
+              return {
+                userId: p.userId,
+                role: p.role,
+                displayName: p.label,
+                email: `${p.userId}@example.com`,
+                firstName: firstName,
+                lastName: lastName,
+              };
+            }),
           }),
         });
 
@@ -72,89 +124,161 @@ export default function App() {
 
         if (cancelled) return;
         setState({ loading: false, roomJid, token });
+
+        // Auto-select first patient for admin/practitioner if none selected
+        if (
+          (persona.role === "admin" || persona.role === "practitioner") &&
+          !selectedPatient &&
+          availablePatients.length > 0
+        ) {
+          setSelectedPatient(availablePatients[0]);
+        }
       } catch (error) {
         if (cancelled) return;
         setState({
           loading: false,
           error: error instanceof Error ? error.message : String(error),
         });
+      } finally {
+        isRunningRef.current = false;
       }
     }
     load();
     return () => {
       cancelled = true;
+      isRunningRef.current = false;
     };
   }, [backend, persona.userId]);
 
   return (
-    <div style={styles.page}>
-      <div style={styles.sidebar}>
-        <h2>Healthcare/Insurance Portal</h2>
-        <p style={styles.muted}>
-          Emulates a portal tab where a user is viewing case <code>{CASE_ID}</code>
-          .
-        </p>
-        <label style={styles.label}>Persona</label>
-        <select
-          value={persona.userId}
-          onChange={(e) => {
-            const next = personas.find((p) => p.userId === e.target.value);
-            if (next) setPersona(next);
-          }}
-          style={styles.select}
-        >
-          {personas.map((p) => (
-            <option key={p.userId} value={p.userId}>
-              {p.label}
-            </option>
-          ))}
-        </select>
+    <XmppProvider>
+      <div style={styles.page}>
+        <div style={styles.sidebar}>
+          <h2>Healthcare/Insurance Portal</h2>
+          <p style={styles.muted}>
+            Emulates a portal tab where a user is viewing case{" "}
+            <code>{CASE_ID}</code>.
+          </p>
+          <label style={styles.label}>Persona</label>
+          <select
+            value={persona.userId}
+            onChange={(e) => {
+              const next = personas.find((p) => p.userId === e.target.value);
+              if (next) {
+                setPersona(next);
+                // Reset patient selection when switching personas
+                if (next.role === "patient") {
+                  setSelectedPatient(null);
+                } else if (
+                  next.role === "admin" ||
+                  next.role === "practitioner"
+                ) {
+                  // Auto-select first patient for admin/practitioner
+                  if (availablePatients.length > 0) {
+                    setSelectedPatient(availablePatients[0]);
+                  }
+                }
+              }
+            }}
+            style={styles.select}
+          >
+            {personas.map((p) => (
+              <option key={p.userId} value={p.userId}>
+                {p.label}
+              </option>
+            ))}
+          </select>
 
-        <div style={styles.meta}>
-          <div>
-            <strong>User:</strong> {persona.userId}
+          {(persona.role === "admin" || persona.role === "practitioner") && (
+            <>
+              <label style={styles.label}>Select Patient</label>
+              <select
+                value={selectedPatient?.userId || ""}
+                onChange={(e) => {
+                  const patient = availablePatients.find(
+                    (p) => p.userId === e.target.value
+                  );
+                  setSelectedPatient(patient || null);
+                }}
+                style={styles.select}
+              >
+                <option value="">-- Select Patient --</option>
+                {availablePatients.map((p) => (
+                  <option key={p.userId} value={p.userId}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
+
+          <div style={styles.meta}>
+            <div>
+              <strong>User:</strong> {persona.userId}
+            </div>
+            <div>
+              <strong>Role:</strong> {persona.role}
+            </div>
+            {selectedPatient && (
+              <div>
+                <strong>Chatting with:</strong> {selectedPatient.label}
+              </div>
+            )}
+            <div>
+              <strong>Case:</strong> {CASE_ID}
+            </div>
+            <div>
+              <strong>Backend:</strong> {backend}
+            </div>
           </div>
-          <div>
-            <strong>Role:</strong> {persona.role}
-          </div>
-          <div>
-            <strong>Case:</strong> {CASE_ID}
-          </div>
-          <div>
-            <strong>Backend:</strong> {backend}
-          </div>
+
+          {state.error && (
+            <div style={styles.error}>
+              <strong>Load failed:</strong> {state.error}
+            </div>
+          )}
+          {state.loading && <div style={styles.loading}>Loading chat…</div>}
         </div>
 
-        {state.error && (
-          <div style={styles.error}>
-            <strong>Load failed:</strong> {state.error}
-          </div>
-        )}
-        {state.loading && <div style={styles.loading}>Loading chat…</div>}
+        <div style={styles.chatPane}>
+          {!state.loading && !state.error && roomJidToUse && state.token ? (
+            <Chat
+              roomJID={roomJidToUse}
+              config={{
+                xmppSettings: {
+                  devServer: "wss://xmpp.ethoradev.com:5443/ws",
+                  host: "xmpp.ethoradev.com",
+                  conference: "conference.xmpp.ethoradev.com",
+                },
+                baseUrl: "https://api.ethoradev.com/v1",
+                newArch: true,
+                refreshTokens: { enabled: true },
+                disableRooms: persona.role === "patient",
+                jwtLogin: {
+                  token: state.token,
+                  enabled: true,
+                },
+                disableRoomMenu: false,
+                enableRoomsRetry: {
+                  enabled: true,
+                  helperText: "Initializing room",
+                },
+              }}
+            />
+          ) : state.loading ? (
+            <div style={styles.placeholder}>Loading chat…</div>
+          ) : state.error ? (
+            <div style={styles.placeholder}>Error: {state.error}</div>
+          ) : (
+            <div style={styles.placeholder}>
+              {persona.role === "admin" || persona.role === "practitioner"
+                ? "Please select a patient to chat with"
+                : "Chat will appear here"}
+            </div>
+          )}
+        </div>
       </div>
-
-      <div style={styles.chatPane}>
-        {!state.loading && !state.error && state.roomJid && state.token ? (
-          <Chat
-            roomJID={state.roomJid}
-            user={{ token: state.token }}
-            config={{
-              xmppSettings: {
-                devServer: "wss://xmpp.ethoradev.com:5443/ws",
-                host: "xmpp.ethoradev.com",
-                conference: "conference.xmpp.ethoradev.com",
-              },
-              baseUrl: "https://api.ethoradev.com/v1",
-              newArch: true,
-              refreshTokens: { enabled: true },
-              disableRooms: false,
-            }}
-          />
-        ) : (
-          <div style={styles.placeholder}>Chat will appear here</div>
-        )}
-      </div>
-    </div>
+    </XmppProvider>
   );
 }
 
@@ -225,4 +349,3 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "14px",
   },
 };
-

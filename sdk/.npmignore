@@ -1,0 +1,22 @@
+# Source files (only dist should be published)
+src/
+examples/
+tsconfig.json
+*.ts
+!*.d.ts
+
+# Development files
+.git/
+.gitignore
+.npmignore
+*.log
+.env*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+

@@ -65,7 +65,7 @@ const loggerCache = new Map<string, Logger>();
 
 /**
  * Gets a logger instance for the given context
- * 
+ *
  * @param context - The context/name for the logger (typically the module name)
  * @returns Logger instance
  */
@@ -75,6 +75,5 @@ export function getLogger(context: string): Logger {
   }
   return loggerCache.get(context)!;
 }
-
 
 

@@ -141,6 +141,8 @@ export class ChatRepositoryImpl implements ChatRepository {
    * - bypassEmailConfirmation: true
    * - usersList: array with user objects containing email, firstName, lastName, password, uuid
    *
+   * User IDs are automatically prefixed with appId to ensure compatibility with grant access.
+   *
    * @param userId - The unique identifier of the user (used as uuid)
    * @param userData - Additional user data (optional) - can include email, firstName, lastName, password, etc.
    * @returns The API response
@@ -261,27 +263,7 @@ export class ChatRepositoryImpl implements ChatRepository {
   }
 
   /**
-   * Normalizes a user ID to XMPP username format (appId_userId)
-   * This ensures consistency with how users are created in the system
-   *
-   * @param userId - The user ID to normalize
-   * @returns The XMPP username in format appId_userId
-   */
-  private normalizeToXmppUsername(userId: UUID): string {
-    const userIdStr = String(userId);
-    // If userId already starts with appId, use it as-is
-    // Otherwise, prefix it with appId to match the format used during user creation
-    if (userIdStr.startsWith(this.secrets.chatAppId)) {
-      return userIdStr;
-    }
-    return `${this.secrets.chatAppId}_${userIdStr}`;
-  }
-
-  /**
    * Grants a user access to a chat room
-   *
-   * The API expects XMPP usernames in the format: appId_userId
-   * This matches the UUID format used when creating users (uuid: appId_userId)
    *
    * @param workspaceId - The unique identifier of the workspace
    * @param userId - The unique identifier of the user (or array of user IDs)
@@ -300,10 +282,23 @@ export class ChatRepositoryImpl implements ChatRepository {
     const grantUrl = `${this.baseEthoraUrl}/v1/chats/users-access`;
 
     // Convert single userId to array if needed
-    // Normalize to XMPP username format (appId_userId) to match user creation format
+    // API requires usernames to start with appId, so prefix them
     const members = Array.isArray(userId)
-      ? userId.map((id) => this.normalizeToXmppUsername(id))
-      : [this.normalizeToXmppUsername(userId)];
+      ? userId.map((id) => {
+          const userIdStr = String(id);
+          // If userId doesn't start with appId, prefix it
+          return userIdStr.startsWith(this.secrets.chatAppId)
+            ? userIdStr
+            : `${this.secrets.chatAppId}_${userIdStr}`;
+        })
+      : [
+          (() => {
+            const userIdStr = String(userId);
+            return userIdStr.startsWith(this.secrets.chatAppId)
+              ? userIdStr
+              : `${this.secrets.chatAppId}_${userIdStr}`;
+          })(),
+        ];
 
     const payload: GrantAccessRequest = {
       chatName: chatName,
@@ -312,7 +307,6 @@ export class ChatRepositoryImpl implements ChatRepository {
 
     logger.debug(`Chat service API URL: ${grantUrl}`);
     logger.debug(`Request payload: ${JSON.stringify(payload)}`);
-    logger.debug(`Using XMPP usernames for members: ${members.join(", ")}`);
 
     try {
       return await this.makeRequest<ApiResponse>({
@@ -329,8 +323,6 @@ export class ChatRepositoryImpl implements ChatRepository {
           }, Response: ${JSON.stringify(errorData)}`,
           error
         );
-        // Log the XMPP usernames that were attempted for debugging
-        logger.debug(`Attempted XMPP usernames: ${members.join(", ")}`);
       }
       throw error;
     }
@@ -479,3 +471,5 @@ export function getChatRepositoryImpl(): ChatRepositoryImpl {
   }
   return repositoryInstance;
 }
+
+
