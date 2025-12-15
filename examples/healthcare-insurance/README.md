@@ -174,3 +174,27 @@ You should be in the root folder where you will see this including "src" and "ex
 You should see Vite running:
 
 <img width="720" height="282" alt="CleanShot 2025-12-10 at 14 21 04@2x" src="https://github.com/user-attachments/assets/05448b9b-6729-4393-bfdc-56ffe4ef5983" />
+
+After all you should see the chats loading on yout localhost as well as logs from demo-backend (creation of users, rooms, granting of the access and generating the jwt tokens for users to get their data)
+
+By default you will see the Admin's screen, who have access to all the available chats and their history.
+
+<img width="3432" height="1914" alt="Screenshot Main screen" src="https://github.com/user-attachments/assets/91d86253-4375-4250-ae72-4e414874e501" />
+
+You can change the view using the dropdown. On clcik on other persona - it will auto-logout from current user and load chats and history for selected one.
+
+<img width="3432" height="1914" alt="Screenshot Select" src="https://github.com/user-attachments/assets/4871233a-3565-49d7-897d-19f61a0ebea6" />
+
+For practitioner you should see the chat with the patients, who are assigned to this particular pratitioner
+
+<img width="3432" height="1914" alt="Screenshot Practitioner" src="https://github.com/user-attachments/assets/0af8a568-2bea-4261-a5d3-63c518163eef" />
+
+The chat view changes for the Patient, as he sees only chat with his pratitioner. (still you can change the view anytime using the chat config in App.tsx)
+
+<img width="3432" height="1914" alt="Screenshot User" src="https://github.com/user-attachments/assets/9032feeb-0f4c-474e-a695-119a6b83fde5" />
+
+Feel free to copy this repo and test yourself. You can create your own users and create rooms/grant access accordingly.
+
+
+
+
