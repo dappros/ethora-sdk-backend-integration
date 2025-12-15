@@ -16,7 +16,7 @@
  *   - Falls back to process env
  *
  * Run (from repo root):
- *   npm install express @types/express ts-node
+ *   npm install express cors dotenv ts-node @types/express @types/cors
  *   npx ts-node examples/healthcare-insurance/demo-backend.ts
  *
  * @format

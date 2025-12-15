@@ -4,7 +4,7 @@
  * This SDK provides a TypeScript/Node.js implementation for integrating
  * with the Ethora chat service backend API.
  *
- * import { getEthoraSDKService } from '@ethora/sdk-backend-integration';
+ * import { getEthoraSDKService } from '@ethora/sdk-backend';
  *
  * const chatRepo = getEthoraSDKService();
  *

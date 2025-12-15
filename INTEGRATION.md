@@ -32,11 +32,11 @@ This guide will walk you through integrating the Ethora SDK into your existing N
 ### Step 1: Install the Package
 
 ```bash
-npm install @ethora/sdk-backend-integration
+npm install @ethora/sdk-backend
 # or
-yarn add @ethora/sdk-backend-integration
+yarn add @ethora/sdk-backend
 # or
-pnpm add @ethora/sdk-backend-integration
+pnpm add @ethora/sdk-backend
 ```
 
 ### Step 2: Install Type Definitions (if using TypeScript)
@@ -81,7 +81,7 @@ dotenv.config();
 ### Step 1: Import the SDK
 
 ```typescript
-import { getEthoraSDKService } from "@ethora/sdk-backend-integration";
+import { getEthoraSDKService } from "@ethora/sdk-backend";
 ```
 
 ### Step 2: Initialize the Service
@@ -92,7 +92,7 @@ You can initialize the service in several ways:
 
 ```typescript
 // services/chatService.ts
-import { getEthoraSDKService } from "@ethora/sdk-backend-integration";
+import { getEthoraSDKService } from "@ethora/sdk-backend";
 
 // Get the singleton instance
 const chatService = getEthoraSDKService();
@@ -104,7 +104,7 @@ export default chatService;
 
 ```typescript
 // In your route handler or service
-import { getEthoraSDKService } from "@ethora/sdk-backend-integration";
+import { getEthoraSDKService } from "@ethora/sdk-backend";
 
 const chatService = getEthoraSDKService();
 ```
@@ -114,7 +114,7 @@ const chatService = getEthoraSDKService();
 ```typescript
 // chat.service.ts
 import { Injectable } from "@nestjs/common";
-import { getEthoraSDKService } from "@ethora/sdk-backend-integration";
+import { getEthoraSDKService } from "@ethora/sdk-backend";
 
 @Injectable()
 export class ChatService {
@@ -131,7 +131,7 @@ export class ChatService {
 ```typescript
 // routes/chat.ts
 import express, { Request, Response } from "express";
-import { getEthoraSDKService } from "@ethora/sdk-backend-integration";
+import { getEthoraSDKService } from "@ethora/sdk-backend";
 import axios from "axios";
 
 const router = express.Router();
@@ -227,7 +227,7 @@ export default router;
 ```typescript
 // chat/chat.service.ts
 import { Injectable, HttpException, HttpStatus } from "@nestjs/common";
-import { getEthoraSDKService } from "@ethora/sdk-backend-integration";
+import { getEthoraSDKService } from "@ethora/sdk-backend";
 import axios from "axios";
 
 @Injectable()
@@ -306,7 +306,7 @@ export class ChatController {
 ```typescript
 // routes/chat.ts
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { getEthoraSDKService } from "@ethora/sdk-backend-integration";
+import { getEthoraSDKService } from "@ethora/sdk-backend";
 
 const chatService = getEthoraSDKService();
 
@@ -493,7 +493,7 @@ The SDK uses Axios for HTTP requests, so errors are AxiosError instances:
 
 ```typescript
 import axios from "axios";
-import { getEthoraSDKService } from "@ethora/sdk-backend-integration";
+import { getEthoraSDKService } from "@ethora/sdk-backend";
 
 const chatService = getEthoraSDKService();
 
@@ -583,8 +583,8 @@ Create a service wrapper in your application:
 
 ```typescript
 // services/chatService.ts
-import { getEthoraSDKService } from "@ethora/sdk-backend-integration";
-import type { ChatRepository } from "@ethora/sdk-backend-integration";
+import { getEthoraSDKService } from "@ethora/sdk-backend";
+import type { ChatRepository } from "@ethora/sdk-backend";
 
 class ChatServiceWrapper {
   private service: ChatRepository;
@@ -639,7 +639,7 @@ validateEthoraConfig();
 Integrate with your existing logging system:
 
 ```typescript
-import { getEthoraSDKService } from "@ethora/sdk-backend-integration";
+import { getEthoraSDKService } from "@ethora/sdk-backend";
 import { logger } from "./utils/logger"; // Your logger
 
 const chatService = getEthoraSDKService();
@@ -662,7 +662,7 @@ async function createChatRoomWithLogging(workspaceId: string) {
 Use TypeScript types from the SDK:
 
 ```typescript
-import type { UUID, ApiResponse } from "@ethora/sdk-backend-integration";
+import type { UUID, ApiResponse } from "@ethora/sdk-backend";
 
 async function createUserTyped(
   userId: UUID,

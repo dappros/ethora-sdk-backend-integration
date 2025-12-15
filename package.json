@@ -1,9 +1,13 @@
 {
-  "name": "@ethora/sdk-backend-integration",
-  "version": "1.0.0",
+  "name": "@ethora/sdk-backend",
+  "version": "25.12.15",
   "description": "TypeScript SDK for integrating with Ethora chat service backend API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
@@ -17,17 +21,11 @@
     "typescript",
     "backend"
   ],
-  "author": "",
+  "author": "Ethora",
   "license": "MIT",
   "dependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
     "axios": "^1.6.0",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^5.2.1",
-    "jsonwebtoken": "^9.0.2",
-    "ts-node": "^10.9.2"
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.6",
@@ -36,9 +34,5 @@
   },
   "peerDependencies": {
     "axios": "^1.6.0"
-  },
-  "files": [
-    "dist",
-    "README.md"
-  ]
+  }
 }

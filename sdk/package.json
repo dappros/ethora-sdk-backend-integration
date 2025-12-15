@@ -1,5 +1,5 @@
 {
-  "name": "@ethora/sdk-backend-integration",
+  "name": "@ethora/sdk-backend",
   "version": "1.0.0",
   "description": "TypeScript SDK for integrating your backend with the Ethora chat service",
   "main": "dist/index.js",

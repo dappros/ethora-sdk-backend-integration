@@ -7,9 +7,9 @@ TypeScript/Node.js SDK for integrating your backend with the Ethora chat service
 ## Installation
 
 ```bash
-npm install @ethora/sdk-backend-integration
+npm install @ethora/sdk-backend
 # or
-yarn add @ethora/sdk-backend-integration
+yarn add @ethora/sdk-backend
 ```
 
 ## Quick Start
@@ -26,7 +26,7 @@ ETHORA_CHAT_BOT_JID=your_bot_jid@domain.com  # Optional
 ### 2. Basic Usage
 
 ```typescript
-import { getEthoraSDKService } from "@ethora/sdk-backend-integration";
+import { getEthoraSDKService } from "@ethora/sdk-backend";
 
 // Get repository instance
 const chatRepo = getEthoraSDKService();
@@ -194,7 +194,7 @@ Deletes a chat room by workspace ID.
 ## Complete Example
 
 ```typescript
-import { getEthoraSDKService } from "@ethora/sdk-backend-integration";
+import { getEthoraSDKService } from "@ethora/sdk-backend";
 
 const chatRepo = getEthoraSDKService();
 const workspaceId = "case-123";
