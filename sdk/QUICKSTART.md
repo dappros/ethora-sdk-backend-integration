@@ -24,9 +24,9 @@ ETHORA_CHAT_BOT_JID=your_bot_jid@domain.com
 ## Basic Usage
 
 ```typescript
-import { getChatRepositoryImpl } from "./src";
+import { getEthoraSDKService } from "./src";
 
-const chatRepo = getChatRepositoryImpl();
+const chatRepo = getEthoraSDKService();
 
 // Create a user, username shoud start with appid then "-" or "_" and then id you want.
 await chatRepo.createUser("user-123", {

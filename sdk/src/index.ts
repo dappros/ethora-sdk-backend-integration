@@ -4,11 +4,9 @@
  * This SDK provides a TypeScript/Node.js implementation for integrating
  * with the Ethora chat service backend API.
  *
- * @example
- * ```typescript
- * import { getChatRepositoryImpl } from '@ethora/sdk-backend-integration';
+ * import { getEthoraSDKService } from '@ethora/sdk-backend-integration';
  *
- * const chatRepo = getChatRepositoryImpl();
+ * const chatRepo = getEthoraSDKService();
  *
  * // Create a chat room
  * await chatRepo.createChatRoom('workspace-123', {
@@ -30,6 +28,9 @@
  * // Generate client token
  * const token = chatRepo.createChatUserJwtToken('user-123');
  * ```
+ *
+ * @format
+ * @example ```typescript
  */
 
 // Export types
@@ -44,9 +45,7 @@ export * from "./utils/jwt";
 
 // Export repositories
 export {
-  ChatRepositoryImpl,
-  getChatRepositoryImpl,
+  EthoraSDKService,
+  getEthoraSDKService,
 } from "./repositories/ChatRepositoryImpl";
 export type { ChatRepository } from "./types";
-
-

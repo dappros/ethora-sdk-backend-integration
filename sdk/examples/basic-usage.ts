@@ -8,11 +8,11 @@
  * - Generate client tokens
  */
 
-import { getChatRepositoryImpl } from "../src";
+import { getEthoraSDKService } from "../src";
 
 async function main() {
   // Get repository instance
-  const chatRepo = getChatRepositoryImpl();
+  const chatRepo = getEthoraSDKService();
 
   const workspaceId = "workspace-123";
   const userIds = ["user-1", "user-2", "user-3"];

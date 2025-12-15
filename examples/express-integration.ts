@@ -5,13 +5,13 @@
  */
 
 import express, { Request, Response } from 'express';
-import { getChatRepositoryImpl } from '../src/index';
+import { getEthoraSDKService } from '../src/index';
 import axios from 'axios';
 
 const app = express();
 app.use(express.json());
 
-const chatRepo = getChatRepositoryImpl();
+const chatRepo = getEthoraSDKService();
 
 /**
  * Create a chat room for a workspace

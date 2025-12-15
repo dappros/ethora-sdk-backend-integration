@@ -28,7 +28,7 @@ import { config as loadEnv } from "dotenv";
 import express, { Request, Response } from "express";
 import cors from "cors";
 import axios from "axios";
-import { getChatRepositoryImpl } from "../../src";
+import { getEthoraSDKService } from "../../src";
 import { getFileLogger } from "./file-logger";
 
 const logger = getFileLogger();
@@ -72,7 +72,7 @@ app.use(
 
 app.use(express.json());
 
-const chatRepo = getChatRepositoryImpl();
+const chatRepo = getEthoraSDKService();
 
 const users = new Map<string, Participant>();
 const cases = new Map<string, CaseRecord>();

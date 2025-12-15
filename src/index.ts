@@ -16,7 +16,7 @@ export * from "./utils/logger";
 export * from "./utils/jwt";
 
 // Export repositories
-export { ChatRepositoryImpl, getChatRepositoryImpl } from "./repositories/ChatRepositoryImpl";
+export { EthoraSDKService, getEthoraSDKService } from "./repositories/ChatRepositoryImpl";
 export type { ChatRepository } from "./types";
 
 

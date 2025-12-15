@@ -41,10 +41,10 @@ ETHORA_CHAT_APP_SECRET=your_app_secret
 ### 2. Basic Usage
 
 ```typescript
-import { getChatRepositoryImpl } from '@ethora/sdk-backend-integration';
+import { getEthoraSDKService } from '@ethora/sdk-backend-integration';
 
 // Get repository instance
-const chatRepo = getChatRepositoryImpl();
+const chatRepo = getEthoraSDKService();
 
 // Create a chat room for a workspace
 const workspaceId = '123e4567-e89b-12d3-a456-426614174000';
@@ -224,10 +224,10 @@ See the `examples/` directory for complete working examples:
 ### Complete Workspace Setup
 
 ```typescript
-import { getChatRepositoryImpl } from '@ethora/sdk-backend-integration';
+import { getEthoraSDKService } from '@ethora/sdk-backend-integration';
 
 async function setupWorkspaceChat(workspaceId: string, userIds: string[]) {
-  const chatRepo = getChatRepositoryImpl();
+  const chatRepo = getEthoraSDKService();
 
   try {
     // 1. Create chat room
@@ -261,10 +261,10 @@ async function setupWorkspaceChat(workspaceId: string, userIds: string[]) {
 ### Generate Client Tokens for Frontend
 
 ```typescript
-import { getChatRepositoryImpl } from '@ethora/sdk-backend-integration';
+import { getEthoraSDKService } from '@ethora/sdk-backend-integration';
 
 function generateClientTokens(userIds: string[]): Record<string, string> {
-  const chatRepo = getChatRepositoryImpl();
+  const chatRepo = getEthoraSDKService();
   const tokens: Record<string, string> = {};
 
   for (const userId of userIds) {
@@ -286,7 +286,7 @@ app.get('/api/chat/tokens/:userId', (req, res) => {
 
 ```typescript
 async function cleanupWorkspace(workspaceId: string, userIds: string[]) {
-  const chatRepo = getChatRepositoryImpl();
+  const chatRepo = getEthoraSDKService();
 
   try {
     // Delete chat room (handles non-existent rooms gracefully)
@@ -309,10 +309,10 @@ async function cleanupWorkspace(workspaceId: string, userIds: string[]) {
 
 ```typescript
 import express from 'express';
-import { getChatRepositoryImpl } from '@ethora/sdk-backend-integration';
+import { getEthoraSDKService } from '@ethora/sdk-backend-integration';
 
 const app = express();
-const chatRepo = getChatRepositoryImpl();
+const chatRepo = getEthoraSDKService();
 
 app.post('/workspaces/:workspaceId/chat', async (req, res) => {
   try {

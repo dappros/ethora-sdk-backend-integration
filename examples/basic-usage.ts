@@ -4,13 +4,13 @@
  * This file demonstrates common use cases for the SDK.
  */
 
-import { getChatRepositoryImpl } from '../src/index';
+import { getEthoraSDKService } from '../src/index';
 
 /**
  * Example: Complete workspace chat setup
  */
 export async function setupWorkspaceChatExample() {
-  const chatRepo = getChatRepositoryImpl();
+  const chatRepo = getEthoraSDKService();
   const workspaceId = '123e4567-e89b-12d3-a456-426614174000';
   const userIds = ['user-1', 'user-2', 'user-3'];
 
@@ -52,7 +52,7 @@ export async function setupWorkspaceChatExample() {
  * Example: Generate client tokens for frontend
  */
 export function generateClientTokensExample(userIds: string[]): Record<string, string> {
-  const chatRepo = getChatRepositoryImpl();
+  const chatRepo = getEthoraSDKService();
   const tokens: Record<string, string> = {};
 
   for (const userId of userIds) {
@@ -67,7 +67,7 @@ export function generateClientTokensExample(userIds: string[]): Record<string, s
  * Example: Cleanup workspace
  */
 export async function cleanupWorkspaceExample(workspaceId: string, userIds: string[]) {
-  const chatRepo = getChatRepositoryImpl();
+  const chatRepo = getEthoraSDKService();
 
   try {
     // Delete chat room (handles non-existent gracefully)
@@ -95,7 +95,7 @@ export async function cleanupWorkspaceExample(workspaceId: string, userIds: stri
  * Example: Get chat room name
  */
 export function getChatRoomNameExample(workspaceId: string) {
-  const chatRepo = getChatRepositoryImpl();
+  const chatRepo = getEthoraSDKService();
 
   // Full JID format
   const fullJid = chatRepo.createChatName(workspaceId, true);

@@ -26,12 +26,12 @@ import {
 import { createServerToken, createClientToken } from "../utils/jwt";
 import { getLogger } from "../utils/logger";
 
-const logger = getLogger("ChatRepositoryImpl");
+const logger = getLogger("EthoraSDKService");
 
 /**
- * ChatRepositoryImpl - Concrete implementation of ChatRepository
+ * EthoraSDKService - Concrete implementation of ChatRepository
  */
-export class ChatRepositoryImpl implements ChatRepository {
+export class EthoraSDKService implements ChatRepository {
   private readonly baseEthoraUrl: string;
   private readonly secrets = getSecrets();
   private readonly httpClient: AxiosInstance;
@@ -47,7 +47,7 @@ export class ChatRepositoryImpl implements ChatRepository {
       },
     });
 
-    logger.debug("ChatRepositoryImpl instance initialized");
+    logger.debug("EthoraSDKService instance initialized");
   }
 
   /**
@@ -454,22 +454,20 @@ export class ChatRepositoryImpl implements ChatRepository {
 }
 
 /**
- * Provides a singleton instance of ChatRepositoryImpl
+ * Provides a singleton instance of EthoraSDKService
  *
  * This dependency injection function is intended for use with a DI framework
  * or as a simple factory function. It creates and returns a single instance
- * of `ChatRepositoryImpl`.
+ * of `EthoraSDKService`.
  *
  * @returns A singleton instance of the chat repository implementation
  */
-let repositoryInstance: ChatRepositoryImpl | null = null;
+let repositoryInstance: EthoraSDKService | null = null;
 
-export function getChatRepositoryImpl(): ChatRepositoryImpl {
+export function getEthoraSDKService(): EthoraSDKService {
   if (!repositoryInstance) {
-    logger.debug("Creating new ChatRepositoryImpl instance");
-    repositoryInstance = new ChatRepositoryImpl();
+    logger.debug("Creating new EthoraSDKService instance");
+    repositoryInstance = new EthoraSDKService();
   }
   return repositoryInstance;
 }
-
-
