@@ -21,12 +21,12 @@ interface FetchState {
 const DEFAULT_BACKEND =
   import.meta.env.VITE_BACKEND_URL ?? "http://localhost:4000";
 
-const CASE_ID = "case-123";
+const CASE_ID = "case-test";
 
 const personas: Persona[] = [
-  { userId: "admin-13", role: "admin", label: "Admin (Portal)" },
-  { userId: "practitioner-13", role: "practitioner", label: "Practitioner" },
-  { userId: "patient-13", role: "patient", label: "Patient" },
+  { userId: "admin-test", role: "admin", label: "Admin (Portal)" },
+  { userId: "practitioner-test", role: "practitioner", label: "Practitioner" },
+  { userId: "patient-test", role: "patient", label: "Patient" },
 ];
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {

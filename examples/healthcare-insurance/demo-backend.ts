@@ -29,15 +29,19 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import axios from "axios";
 import { getEthoraSDKService } from "../../src";
+import { getSecrets } from "../../src/config/secrets";
+import { createServerToken, createClientToken } from "../../src/utils/jwt";
 import { getFileLogger } from "./file-logger";
 
-const logger = getFileLogger();
-
 // Load .env.local from this example folder if present, else fall back to process env
+// IMPORTANT: Load env vars BEFORE calling getSecrets()
 loadEnv({
   path: path.resolve(process.cwd(), "examples/healthcare-insurance/.env.local"),
 });
 loadEnv(); // also load default .env if present
+
+const logger = getFileLogger();
+const secrets = getSecrets();
 
 type Role = "admin" | "practitioner" | "patient";
 
@@ -122,39 +126,126 @@ function generateRandomUserData(role: Role): {
   return { firstName, lastName, email };
 }
 
+/**
+ * Create user directly via API with plain userId (no appId prefix)
+ */
+async function createUserDirect(
+  userId: string,
+  userData: Record<string, unknown>
+): Promise<any> {
+  const createUrl = `${secrets.chatApiUrl}/v1/users/batch`;
+
+  const email = (userData?.email as string) || `${randomUUID()}@example.com`;
+  const password = (userData?.password as string) || `password_${userId}`;
+
+  let firstName: string;
+  let lastName: string;
+
+  if (userData?.firstName) {
+    firstName = userData.firstName as string;
+    lastName = (userData?.lastName as string) || "";
+  } else if (userData?.displayName) {
+    const displayName = userData.displayName as string;
+    const nameParts = displayName.trim().split(/\s+/);
+    firstName = nameParts[0] || "User";
+    lastName = nameParts.slice(1).join(" ") || "";
+  } else {
+    firstName = "User";
+    lastName = "";
+  }
+
+  if (!lastName || lastName.length < 2) {
+    lastName = "User";
+  }
+
+  const payload = {
+    bypassEmailConfirmation: true,
+    usersList: [
+      {
+        uuid: userId, // Use plain userId without prefix
+        email: email,
+        firstName: firstName,
+        lastName: lastName,
+        password: password,
+        ...(userData &&
+          Object.fromEntries(
+            Object.entries(userData).filter(
+              ([key]) =>
+                ![
+                  "email",
+                  "firstName",
+                  "lastName",
+                  "password",
+                  "uuid",
+                  "displayName",
+                  "role",
+                ].includes(key)
+            )
+          )),
+      },
+    ],
+  };
+
+  const response = await axios.post(createUrl, payload, {
+    headers: {
+      "Content-Type": "application/json",
+      "x-custom-token": createServerToken(),
+    },
+    timeout: 30000,
+  });
+
+  return response.data;
+}
+
+/**
+ * Grant user access directly via API with plain userId (no appId prefix)
+ */
+async function grantAccessDirect(
+  workspaceId: string,
+  userId: string
+): Promise<any> {
+  const grantUrl = `${secrets.chatApiUrl}/v1/chats/users-access`;
+  const chatName = `${secrets.chatAppId}_${workspaceId}`; // Room name still needs appId prefix
+
+  const payload = {
+    chatName: chatName,
+    members: [userId], // Use plain userId without prefix
+  };
+
+  const response = await axios.post(grantUrl, payload, {
+    headers: {
+      "Content-Type": "application/json",
+      "x-custom-token": createServerToken(),
+    },
+    timeout: 30000,
+  });
+
+  return response.data;
+}
+
 async function ensureUser(
   user: Participant
 ): Promise<{ userId: string; xmppUsername: string }> {
-  const appId = (chatRepo as any).secrets.chatAppId;
-  const prefixedUserId = user.userId.startsWith(appId)
-    ? user.userId
-    : `${appId}_${user.userId}`;
-
-  const cachedUser = users.get(user.userId) || users.get(prefixedUserId);
+  const cachedUser = users.get(user.userId);
   if (cachedUser?.xmppUsername) {
     logger.info(
-      `User ${user.userId} already exists in cache, skipping deletion`,
+      `User ${user.userId} already exists in cache, skipping creation`,
       {
         originalUserId: user.userId,
-        prefixedUserId: prefixedUserId,
         cachedXmppUsername: cachedUser.xmppUsername,
       }
     );
     return {
-      userId: cachedUser.userId || prefixedUserId,
-      xmppUsername: cachedUser.xmppUsername,
+      userId: user.userId,
+      xmppUsername: cachedUser.xmppUsername || user.userId,
     };
   }
 
-  logger.info(
-    `Creating user: ${user.userId} (will be created as ${prefixedUserId})`,
-    {
-      role: user.role,
-      displayName: user.displayName,
-      originalUserId: user.userId,
-      prefixedUserId: prefixedUserId,
-    }
-  );
+  logger.info(`Creating user: ${user.userId} (plain userId, no prefix)`, {
+    role: user.role,
+    displayName: user.displayName,
+    userId: user.userId,
+  });
 
   try {
     // Try to create user with provided data first
@@ -188,23 +279,22 @@ async function ensureUser(
     }
 
     logger.debug(
-      `Calling createUser for ${user.userId} (will create as ${prefixedUserId})`,
+      `Calling createUserDirect for ${user.userId} (plain userId, no prefix)`,
       {
         userData,
       }
     );
-    const createUserResponse = await chatRepo.createUser(user.userId, userData);
+    const createUserResponse = await createUserDirect(user.userId, userData);
 
     // Log the full API response
     logger.info(`Ethora API response for user creation:`, {
-      originalUserId: user.userId,
-      prefixedUserId: prefixedUserId,
+      userId: user.userId,
       apiResponse: createUserResponse,
     });
 
     // Extract userId and xmppUsername from API response if present
     let actualUserId = user.userId;
-    let xmppUsername = prefixedUserId; // Default to prefixedUserId if not in response
+    let xmppUsername = user.userId; // Default to plain userId if not in response
 
     if (createUserResponse && typeof createUserResponse === "object") {
       const response = createUserResponse as Record<string, unknown>;
@@ -228,50 +318,43 @@ async function ensureUser(
       if (responseXmppUsername) {
         xmppUsername = responseXmppUsername;
         logger.info(`Using xmppUsername from API response: ${xmppUsername}`, {
-          originalUserId: user.userId,
-          prefixedUserId: prefixedUserId,
+          userId: user.userId,
           apiReturnedXmppUsername: xmppUsername,
         });
-        // Use xmppUsername as the userId for grant access operations
-        actualUserId = xmppUsername;
+        // Always use plain userId, not the API response (which might be prefixed)
+        actualUserId = user.userId;
       }
 
       // Extract userId (fallback if xmppUsername not available)
       const responseUserId = response.userId as string | undefined;
       if (responseUserId && !responseXmppUsername) {
-        actualUserId = responseUserId;
-        logger.info(`Using userId from API response: ${actualUserId}`, {
-          originalUserId: user.userId,
-          apiReturnedUserId: actualUserId,
-        });
+        // Still use plain userId, not API response
+        actualUserId = user.userId;
+        logger.info(
+          `API returned userId, but using plain userId: ${user.userId}`,
+          {
+            apiReturnedUserId: responseUserId,
+            usingUserId: user.userId,
+          }
+        );
       }
     }
 
     // Store xmppUsername in user object for later use
     const userWithXmpp = { ...user, xmppUsername };
 
-    // Store both original and prefixed userId in cache
+    // Store user in cache with plain userId only
     users.set(user.userId, userWithXmpp);
-    users.set(prefixedUserId, userWithXmpp);
-    // Also store with the actual userId from API if different
-    if (actualUserId !== user.userId && actualUserId !== prefixedUserId) {
-      users.set(actualUserId, userWithXmpp);
-    }
 
-    logger.success(
-      `User ${user.userId} created successfully as ${prefixedUserId}`,
-      {
-        userId: user.userId,
-        prefixedUserId: prefixedUserId,
-        actualUserId: actualUserId,
-        xmppUsername: xmppUsername,
-        role: user.role,
-        apiResponse: createUserResponse,
-      }
-    );
+    logger.success(`User ${user.userId} created successfully (plain userId)`, {
+      userId: user.userId,
+      xmppUsername: xmppUsername,
+      role: user.role,
+      apiResponse: createUserResponse,
+    });
 
-    // Return both userId and xmppUsername from API response
-    return { userId: actualUserId, xmppUsername };
+    // Always return plain userId, not API response
+    return { userId: user.userId, xmppUsername };
   } catch (error) {
     // Check if user already exists
     if (axios.isAxiosError(error)) {
@@ -287,16 +370,12 @@ async function ensureUser(
         (errorMessage.includes("already exist") ||
           errorMessage.includes("already exists"))
       ) {
-        logger.info(
-          `User ${user.userId} already exists, skipping deletion and creation`,
-          {
-            userId: user.userId,
-            prefixedUserId: prefixedUserId,
-          }
-        );
+        logger.info(`User ${user.userId} already exists, skipping creation`, {
+          userId: user.userId,
+        });
 
         // Check if we have cached xmppUsername
-        const cachedUser = users.get(user.userId) || users.get(prefixedUserId);
+        const cachedUser = users.get(user.userId);
         if (cachedUser?.xmppUsername) {
           logger.info(
             `Using cached xmppUsername for existing user: ${cachedUser.xmppUsername}`,
@@ -306,22 +385,20 @@ async function ensureUser(
             }
           );
           return {
-            userId: cachedUser.userId || prefixedUserId,
+            userId: user.userId,
             xmppUsername: cachedUser.xmppUsername,
           };
         }
 
-        // If not cached, store user and return prefixed userId as fallback
+        // If not cached, store user and return plain userId as fallback
         users.set(user.userId, user);
-        users.set(prefixedUserId, user);
         logger.warn(
-          `No cached xmppUsername found, using prefixed userId as fallback`,
+          `No cached xmppUsername found, using plain userId as fallback`,
           {
             userId: user.userId,
-            prefixedUserId: prefixedUserId,
           }
         );
-        return { userId: prefixedUserId, xmppUsername: prefixedUserId };
+        return { userId: user.userId, xmppUsername: user.userId };
       }
 
       // If creation failed for other reasons, try with random data
@@ -336,7 +413,7 @@ async function ensureUser(
         randomData,
       });
       try {
-        const retryResponse = await chatRepo.createUser(user.userId, {
+        const retryResponse = await createUserDirect(user.userId, {
           firstName: randomData.firstName,
           lastName: randomData.lastName,
           email: randomData.email,
@@ -345,14 +422,13 @@ async function ensureUser(
 
         // Log the full API response
         logger.info(`Ethora API response for user creation (retry):`, {
-          originalUserId: user.userId,
-          prefixedUserId: prefixedUserId,
+          userId: user.userId,
           apiResponse: retryResponse,
         });
 
         // Extract userId and xmppUsername from API response if present
         let actualUserId = user.userId;
-        let xmppUsername = prefixedUserId; // Default to prefixedUserId if not in response
+        let xmppUsername = user.userId; // Default to plain userId if not in response
 
         if (retryResponse && typeof retryResponse === "object") {
           const response = retryResponse as Record<string, unknown>;
@@ -380,24 +456,24 @@ async function ensureUser(
             logger.info(
               `Using xmppUsername from API response (retry): ${xmppUsername}`,
               {
-                originalUserId: user.userId,
-                prefixedUserId: prefixedUserId,
+                userId: user.userId,
                 apiReturnedXmppUsername: xmppUsername,
               }
             );
-            // Use xmppUsername as the userId for grant access operations
-            actualUserId = xmppUsername;
+            // Always use plain userId, not API response
+            actualUserId = user.userId;
           }
 
           // Extract userId (fallback if xmppUsername not available)
           const responseUserId = response.userId as string | undefined;
           if (responseUserId && !responseXmppUsername) {
-            actualUserId = responseUserId;
+            // Still use plain userId
+            actualUserId = user.userId;
             logger.info(
-              `Using userId from API response (retry): ${actualUserId}`,
+              `API returned userId, but using plain userId (retry): ${user.userId}`,
               {
-                originalUserId: user.userId,
-                apiReturnedUserId: actualUserId,
+                apiReturnedUserId: responseUserId,
+                usingUserId: user.userId,
               }
             );
           }
@@ -412,25 +488,18 @@ async function ensureUser(
           xmppUsername, // Store xmppUsername from API response
         };
         users.set(user.userId, updatedUser);
-        users.set(prefixedUserId, updatedUser);
-        // Also store with the actual userId from API if different
-        if (actualUserId !== user.userId && actualUserId !== prefixedUserId) {
-          users.set(actualUserId, updatedUser);
-        }
         logger.success(
-          `User ${user.userId} created with random data as ${prefixedUserId}`,
+          `User ${user.userId} created with random data (plain userId)`,
           {
             userId: user.userId,
-            prefixedUserId: prefixedUserId,
-            actualUserId: actualUserId,
             xmppUsername: xmppUsername,
             name: `${randomData.firstName} ${randomData.lastName}`,
             email: randomData.email,
             apiResponse: retryResponse,
           }
         );
-        // Return both userId and xmppUsername from API response
-        return { userId: actualUserId, xmppUsername };
+        // Always return plain userId
+        return { userId: user.userId, xmppUsername };
       } catch (retryError) {
         // If still fails, check if it's "already exists" error
         if (axios.isAxiosError(retryError)) {
@@ -446,13 +515,12 @@ async function ensureUser(
               retryErrorMessage.includes("already exists"))
           ) {
             logger.info(
-              `User ${user.userId} already exists, skipping deletion and creation`,
-              { userId: user.userId, prefixedUserId: prefixedUserId }
+              `User ${user.userId} already exists, skipping creation`,
+              { userId: user.userId }
             );
 
             // Check if we have cached xmppUsername
-            const cachedUser =
-              users.get(user.userId) || users.get(prefixedUserId);
+            const cachedUser = users.get(user.userId);
             if (cachedUser?.xmppUsername) {
               logger.info(
                 `Using cached xmppUsername for existing user (retry): ${cachedUser.xmppUsername}`,
@@ -462,22 +530,20 @@ async function ensureUser(
                 }
               );
               return {
-                userId: cachedUser.userId || prefixedUserId,
+                userId: user.userId,
                 xmppUsername: cachedUser.xmppUsername,
               };
             }
 
-            // If not cached, store user and return prefixed userId as fallback
+            // If not cached, store user and return plain userId as fallback
             users.set(user.userId, user);
-            users.set(prefixedUserId, user);
             logger.warn(
-              `No cached xmppUsername found (retry), using prefixed userId as fallback`,
+              `No cached xmppUsername found (retry), using plain userId as fallback`,
               {
                 userId: user.userId,
-                prefixedUserId: prefixedUserId,
               }
             );
-            return { userId: prefixedUserId, xmppUsername: prefixedUserId };
+            return { userId: user.userId, xmppUsername: user.userId };
           }
         }
         // If it's a different error, log and re-throw
@@ -501,7 +567,7 @@ async function grantAccess(caseId: string, userId: string) {
     userId,
   });
   try {
-    await chatRepo.grantUserAccessToChatRoom(caseId, userId);
+    await grantAccessDirect(caseId, userId);
     logger.success(`Access granted to user ${userId} for case ${caseId}`, {
       caseId,
       userId,
@@ -637,8 +703,9 @@ app.post("/cases", async (req: Request, res: Response) => {
             participant
           );
           actualUserIds.push(actualUserId);
-          // Update participant userId to use the actual userId from API
-          participant.userId = actualUserId;
+          // Keep original userId (don't overwrite with API response which might have prefix)
+          // The API might return xmppUsername, but we want to use plain userId
+          participant.userId = participant.userId; // Keep original plain userId
           // Store xmppUsername in participant for later use (from Ethora API response)
           participant.xmppUsername = xmppUsername;
         }
@@ -690,20 +757,17 @@ app.post("/cases", async (req: Request, res: Response) => {
           userIds: participants.map((p) => p.userId),
         });
         try {
-          // Grant access to each participant individually using xmppUsername from API response
+          // Grant access to each participant individually using plain userId
           for (const participant of participants) {
-            // Get xmppUsername from stored participant (set during ensureUser)
-            // This should be the xmppUsername from Ethora API response (e.g., "693999c2f05487ee2e350919_693c0abaf05487ee2e3573e7")
-            const xmppUsername = participant.xmppUsername || participant.userId;
+            // Use plain userId (no prefix) for grant access
+            const userIdToUse = participant.userId;
             try {
-              // Use xmppUsername from Ethora API response as userId parameter
-              await chatRepo.grantUserAccessToChatRoom(caseId, xmppUsername);
+              await grantAccessDirect(caseId, userIdToUse);
               logger.debug(
-                `Access granted using xmppUsername from API response: ${xmppUsername}`,
+                `Access granted using plain userId: ${userIdToUse}`,
                 {
                   caseId,
-                  originalUserId: participant.userId,
-                  xmppUsername,
+                  userId: userIdToUse,
                 }
               );
             } catch (userError) {
@@ -711,22 +775,20 @@ app.post("/cases", async (req: Request, res: Response) => {
                 const errorData = userError.response?.data;
                 const status = userError.response?.status;
                 logger.warn(
-                  `Failed to grant access using xmppUsername: ${xmppUsername}`,
+                  `Failed to grant access using userId: ${userIdToUse}`,
                   {
                     caseId,
-                    originalUserId: participant.userId,
-                    xmppUsername,
+                    userId: userIdToUse,
                     status,
                     errorData,
                   }
                 );
               } else {
                 logger.warn(
-                  `Failed to grant access using xmppUsername: ${xmppUsername}`,
+                  `Failed to grant access using userId: ${userIdToUse}`,
                   {
                     caseId,
-                    originalUserId: participant.userId,
-                    xmppUsername,
+                    userId: userIdToUse,
                   }
                 );
               }
@@ -738,7 +800,6 @@ app.post("/cases", async (req: Request, res: Response) => {
             {
               participants: participants.map((p) => ({
                 userId: p.userId,
-                xmppUsername: p.xmppUsername || p.userId,
               })),
             }
           );
@@ -834,26 +895,19 @@ app.post("/cases/:caseId/users", async (req: Request, res: Response) => {
     const { userId: actualUserId, xmppUsername } = await ensureUser(
       participant
     );
-    // Update participant userId to use the actual userId from API
-    participant.userId = actualUserId;
-    // Store xmppUsername in participant for later use (from Ethora API response)
-    participant.xmppUsername = xmppUsername;
-    // Use xmppUsername from Ethora API response as userId parameter for grant access
-    // This should be the xmppUsername from API (e.g., "693999c2f05487ee2e350919_693c0abaf05487ee2e3573e7")
-    await grantAccess(caseId, xmppUsername);
+    // Use plain userId for grant access (no prefix)
+    await grantAccess(caseId, participant.userId);
 
     const record = cases.get(caseId)!;
     if (!record.participants.includes(participant.userId)) {
       record.participants.push(participant.userId);
     }
 
-    const response = { caseId, userId: participant.userId, xmppUsername };
+    const response = { caseId, userId: participant.userId };
     // Log the full response being sent to the client
     logger.info(`User creation endpoint response sent to client:`, {
       caseId,
       userId: participant.userId,
-      actualUserId,
-      xmppUsername,
       fullResponse: response,
     });
     res.json(response);
@@ -874,24 +928,13 @@ app.get("/chat/token/:userId", (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
-    // Get appId to check for prefixed userId
-    const appId = (chatRepo as any).secrets.chatAppId;
-    const prefixedUserId = userId.startsWith(appId)
-      ? userId
-      : `${appId}_${userId}`;
-
-    // Look up user in cache to get xmppUsername
-    const cachedUser = users.get(userId) || users.get(prefixedUserId);
-    const xmppUsername = cachedUser?.xmppUsername || prefixedUserId;
-
-    // Use xmppUsername for token creation instead of userId
-    const token = chatRepo.createChatUserJwtToken(xmppUsername);
+    // Use plain userId for token creation (no prefix)
+    const token = createClientToken(userId);
     logger.info(`Token generated for user: ${userId}`, {
       userId,
-      xmppUsername,
       tokenLength: token.length,
     });
-    res.json({ userId, xmppUsername, token });
+    res.json({ userId, token });
   } catch (error) {
     logger.error("Failed to generate token", error, {
       userId: req.params.userId,

@@ -181,18 +181,14 @@ export class EthoraSDKService implements ChatRepository {
       lastName = "User";
     }
 
-    // API requires uuid to start with appId for grant access to work
-    // Prefix userId with appId if it doesn't already start with it
+    // Use plain userId without prefixing
     const userIdStr = String(userId);
-    const prefixedUserId = userIdStr.startsWith(this.secrets.chatAppId)
-      ? userIdStr
-      : `${this.secrets.chatAppId}_${userIdStr}`;
 
     const payload = {
       bypassEmailConfirmation: true,
       usersList: [
         {
-          uuid: prefixedUserId,
+          uuid: userIdStr,
           email: email,
           firstName: firstName,
           lastName: lastName,
@@ -261,27 +257,9 @@ export class EthoraSDKService implements ChatRepository {
   }
 
   /**
-   * Normalizes a user ID to XMPP username format (appId_userId)
-   * This ensures consistency with how users are created in the system
-   *
-   * @param userId - The user ID to normalize
-   * @returns The XMPP username in format appId_userId
-   */
-  private normalizeToXmppUsername(userId: UUID): string {
-    const userIdStr = String(userId);
-    // If userId already starts with appId, use it as-is
-    // Otherwise, prefix it with appId to match the format used during user creation
-    if (userIdStr.startsWith(this.secrets.chatAppId)) {
-      return userIdStr;
-    }
-    return `${this.secrets.chatAppId}_${userIdStr}`;
-  }
-
-  /**
    * Grants a user access to a chat room
    *
-   * The API expects XMPP usernames in the format: appId_userId
-   * This matches the UUID format used when creating users (uuid: appId_userId)
+   * Uses plain userIds without prefixing (matching how users are created)
    *
    * @param workspaceId - The unique identifier of the workspace
    * @param userId - The unique identifier of the user (or array of user IDs)
@@ -300,10 +278,10 @@ export class EthoraSDKService implements ChatRepository {
     const grantUrl = `${this.baseEthoraUrl}/v1/chats/users-access`;
 
     // Convert single userId to array if needed
-    // Normalize to XMPP username format (appId_userId) to match user creation format
+    // Use plain userIds without prefixing
     const members = Array.isArray(userId)
-      ? userId.map((id) => this.normalizeToXmppUsername(id))
-      : [this.normalizeToXmppUsername(userId)];
+      ? userId.map((id) => String(id))
+      : [String(userId)];
 
     const payload: GrantAccessRequest = {
       chatName: chatName,

@@ -95,11 +95,11 @@ Creates a client-side JWT token for a specific user ID.
 
 #### `createUser(userId: UUID, userData?: Record<string, unknown>): Promise<ApiResponse>`
 
-Creates a user in the chat service. The userId will be automatically prefixed with your appId.
+Creates a user in the chat service. The userId is used as-is without any prefixing.
 
 **Parameters:**
 
-- `userId` (UUID): The unique identifier of the user
+- `userId` (UUID): The unique identifier of the user (used as-is, no prefixing)
 - `userData` (optional): Additional user data (firstName, lastName, email, password, displayName)
 
 **Returns:** Promise resolving to the API response
@@ -247,7 +247,7 @@ try {
 
 ## Notes
 
-- User IDs are automatically prefixed with your `appId` when creating users
-- When granting access, user IDs are also automatically prefixed if needed
-- Chat room names follow the format: `{appId}_{workspaceId}`
+- User IDs are used as-is without any prefixing (e.g., `"user-123"` stays `"user-123"`)
+- When granting access, user IDs are used as-is without prefixing
+- Chat room names follow the format: `{appId}_{workspaceId}` (only room names are prefixed, not user IDs)
 - Full JID format: `{appId}_{workspaceId}@conference.xmpp.ethoradev.com`

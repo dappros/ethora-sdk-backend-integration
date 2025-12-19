@@ -1,6 +1,6 @@
 {
   "name": "@ethora/sdk-backend",
-  "version": "25.12.15",
+  "version": "25.12.19",
   "description": "TypeScript SDK for integrating with Ethora chat service backend API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

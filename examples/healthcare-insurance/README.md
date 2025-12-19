@@ -194,7 +194,3 @@ The chat view changes for the Patient, as he sees only chat with his pratitioner
 <img width="3432" height="1914" alt="Screenshot User" src="https://github.com/user-attachments/assets/9032feeb-0f4c-474e-a695-119a6b83fde5" />
 
 Feel free to copy this repo and test yourself. You can create your own users and create rooms/grant access accordingly.
-
-
-
-
