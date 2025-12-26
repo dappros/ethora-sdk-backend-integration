@@ -21,6 +21,13 @@ interface FetchState {
 const DEFAULT_BACKEND =
   import.meta.env.VITE_BACKEND_URL ?? "http://localhost:4000";
 
+const ETHORA_API_BASE_URL =
+  import.meta.env.VITE_ETHORA_API_BASE_URL ?? "https://api.ethoradev.com/v1";
+const XMPP_WS = import.meta.env.VITE_XMPP_WS ?? "wss://xmpp.ethoradev.com:5443/ws";
+const XMPP_HOST = import.meta.env.VITE_XMPP_HOST ?? "xmpp.ethoradev.com";
+const XMPP_CONFERENCE =
+  import.meta.env.VITE_XMPP_CONFERENCE ?? "conference.xmpp.ethoradev.com";
+
 const CASE_ID = "case-test";
 
 const personas: Persona[] = [
@@ -181,11 +188,11 @@ function ChatContent({
             roomJID={roomJidToUse}
             config={{
               xmppSettings: {
-                devServer: "wss://xmpp.ethoradev.com:5443/ws",
-                host: "xmpp.ethoradev.com",
-                conference: "conference.xmpp.ethoradev.com",
+                devServer: XMPP_WS,
+                host: XMPP_HOST,
+                conference: XMPP_CONFERENCE,
               },
-              baseUrl: "https://api.ethoradev.com/v1",
+              baseUrl: ETHORA_API_BASE_URL,
               newArch: true,
               refreshTokens: { enabled: true },
               disableRooms: persona.role === "patient",

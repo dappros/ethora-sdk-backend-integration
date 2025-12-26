@@ -39,7 +39,8 @@ export const DEFAULT_TIMEOUT: TimeoutConfig = {
 /**
  * JID domain for Ethora chat rooms
  */
-export const ETHORA_JID_DOMAIN = "@conference.xmpp.ethoradev.com";
+export const ETHORA_JID_DOMAIN =
+  process.env.ETHORA_JID_DOMAIN || "@conference.xmpp.ethoradev.com";
 
 /**
  * Gets secrets configuration
