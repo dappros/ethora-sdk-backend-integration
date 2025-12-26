@@ -21,7 +21,7 @@ import type {
 import {
   getSecrets,
   DEFAULT_TIMEOUT,
-  ETHORA_JID_DOMAIN,
+  getEthoraJidDomain,
 } from "../config/secrets";
 import { createServerToken, createClientToken } from "../utils/jwt";
 import { getLogger } from "../utils/logger";
@@ -66,7 +66,7 @@ export class EthoraSDKService implements ChatRepository {
     );
 
     const chatName = full
-      ? `${this.secrets.chatAppId}_${workspaceId}${ETHORA_JID_DOMAIN}`
+      ? `${this.secrets.chatAppId}_${workspaceId}${getEthoraJidDomain()}`
       : `${this.secrets.chatAppId}_${workspaceId}`;
 
     logger.info(`Chat room name created: '${chatName}'`);

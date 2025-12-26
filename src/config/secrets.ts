@@ -39,8 +39,18 @@ export const DEFAULT_TIMEOUT: TimeoutConfig = {
 /**
  * JID domain for Ethora chat rooms
  */
-export const ETHORA_JID_DOMAIN =
-  process.env.ETHORA_JID_DOMAIN || "@conference.xmpp.ethoradev.com";
+export const ETHORA_JID_DOMAIN_DEFAULT = "@conference.xmpp.ethoradev.com";
+
+/**
+ * Gets JID domain for Ethora chat rooms.
+ *
+ * NOTE: This must be a function (not a top-level const) because many apps load dotenv
+ * after imports, so reading process.env at module import time would ignore overrides.
+ */
+export function getEthoraJidDomain(): string {
+  return process.env.ETHORA_JID_DOMAIN || ETHORA_JID_DOMAIN_DEFAULT;
+}
+
 
 /**
  * Gets secrets configuration
