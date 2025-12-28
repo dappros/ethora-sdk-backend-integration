@@ -36,6 +36,26 @@ Ethora exposes Swagger UI from every running backend instance at:
 
 If you are running a separate staging instance, the same pattern applies (e.g. `https://api.asterotoken.com/api-docs/`).
 
+## OpenAPI automation (for SDK generation)
+
+This repo can fetch Ethora OpenAPI (`swagger.json`) and generate developer artifacts:
+
+- **Fetch + validate + generate**:
+
+```bash
+# Optional override; defaults to https://api.ethoradev.com/api-docs/swagger.json
+export OPENAPI_URL="https://api.<your-domain>/api-docs/swagger.json"
+
+npm run openapi:update
+```
+
+- **Generated outputs**:
+  - `openapi/swagger.json` (fetched spec snapshot)
+  - `generated/ethora-openapi.d.ts` (TypeScript OpenAPI types)
+  - `postman/ethora-api.postman_collection.json` (Postman collection)
+
+- **CI check**: PRs run `npm run openapi:check` to ensure generated artifacts are up to date.
+
 ## Installation
 
 ### Step 1: Install the Package
