@@ -32,7 +32,7 @@ This guide will walk you through integrating the Ethora SDK into your existing N
 Ethora exposes Swagger UI from every running backend instance at:
 
 - **Hosted (Ethora main)**: `https://api.ethoradev.com/api-docs/`
-- **Enterprise/self-hosted**: `https://api.<your-domain>/api-docs/` (example: `https://api.yourdomain.com/api-docs/`)
+- **Enterprise/self-hosted**: `https://api.<your-domain>/api-docs/`
 
 If you are running a separate staging instance, the same pattern applies (e.g. `https://api.asterotoken.com/api-docs/`).
 
