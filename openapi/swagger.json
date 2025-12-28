@@ -1,0 +1,5763 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Platform API",
+    "description": "Platform API description",
+    "contact": {
+      "name": "Dappros developers team"
+    },
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8090"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Authentication and session management."
+    },
+    {
+      "name": "Users",
+      "description": "Managing Users. <br />ℹ️ Users are end user identities that have authenticated with one of the allowed sign on methods. <br />Each user receives an EVM (Ethereum) compatible \"L2\" cryptographic identity or wallet by default and additional wallets/IDs can be linked if required."
+    },
+    {
+      "name": "Chats",
+      "description": "Chat endpoints (rooms, members, messages helpers) complementing the primary XMPP chat flow."
+    },
+    {
+      "name": "Files",
+      "description": "Managing user uploaded files. ℹ️ Used for chat attachments, documents, user profiles, room media, digital collectibles, etc."
+    },
+    {
+      "name": "Sharelinks",
+      "description": "Secure sharing links for resources such as User Profiles and Documents. <br />ℹ️ Used when resource is not public and/or encrypted."
+    },
+    {
+      "name": "Apps",
+      "description": "Managing Apps and their settings. <br />ℹ️ Mostly used by admin panel / platform management; less common for external integrations."
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "JwtAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Authorization: Bearer <JWT>"
+      },
+      "AppJwtAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "App JWT. Use this token to call app-authorized endpoints (e.g. create user, login, signup). Authorization: Bearer <JWT>"
+      },
+      "UserJwtAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "User JWT. Use this token for user-authorized endpoints (e.g. chats/files/sharelinks/me). Authorization: Bearer <JWT>"
+      },
+      "RefreshJwtAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Refresh JWT. Use this token only for refresh flow. Authorization: Bearer <JWT>"
+      }
+    },
+    "schemas": {
+      "DefaultRooms": {
+        "type": "object",
+        "properties": {
+          "jid": {
+            "type": "string"
+          },
+          "pinned": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UserData": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          }
+        }
+      },
+      "UserDataB2B": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "uuid": {
+            "type": "string"
+          }
+        }
+      },
+      "UserNormalLogin": {
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "UserEmailLogin": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "UserGoogleAppleFacebookLogin": {
+        "type": "object",
+        "required": [
+          "loginType",
+          "password",
+          "authToken"
+        ],
+        "properties": {
+          "loginType": {
+            "type": "string",
+            "enum": [
+              "google",
+              "facebook",
+              "apple"
+            ]
+          },
+          "authToken": {
+            "type": "string"
+          },
+          "signupPlan": {
+            "type": "string",
+            "enum": [
+              "business",
+              "free"
+            ]
+          },
+          "utm": {
+            "type": "string"
+          }
+        }
+      },
+      "SignatureLogin": {
+        "type": "object",
+        "required": [
+          "walletAddress",
+          "signature",
+          "msg"
+        ],
+        "properties": {
+          "walletAddress": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string"
+          },
+          "msg": {
+            "type": "string"
+          }
+        }
+      },
+      "SignatureRegistration": {
+        "type": "object",
+        "required": [
+          "walletAddress",
+          "signature",
+          "msg",
+          "firstName",
+          "lastName"
+        ],
+        "properties": {
+          "walletAddress": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "utm": {
+            "type": "string"
+          }
+        }
+      },
+      "UsernameRegistration": {
+        "type": "object",
+        "required": [
+          "username",
+          "password",
+          "firstName",
+          "lastName"
+        ],
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          }
+        }
+      },
+      "EmailRegistration": {
+        "type": "object",
+        "required": [
+          "email",
+          "password",
+          "firstName",
+          "lastName"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          }
+        }
+      },
+      "UserLoginSuccess": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "msg": {
+            "type": "string",
+            "default": "success"
+          },
+          "token": {
+            "type": "string"
+          },
+          "success_xmpp": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UserRegistrationResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Always false for error responses.",
+            "example": false
+          },
+          "error": {
+            "type": "string",
+            "description": "A brief, human-readable message about the error."
+          },
+          "code": {
+            "type": "string",
+            "description": "A stable machine-readable error code.",
+            "example": "VALIDATION_ERROR"
+          },
+          "details": {
+            "type": "object",
+            "description": "Optional, more specific details about the error (e.g., validation errors)."
+          },
+          "errors": {
+            "description": "Legacy validation errors (if applicable).",
+            "nullable": true
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Request correlation id for debugging/support."
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "example": {
+          "success": false,
+          "error": "Validation Failed",
+          "code": "VALIDATION_ERROR",
+          "details": {
+            "field": "Reason"
+          },
+          "requestId": "..."
+        }
+      },
+      "UserPublic": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "uuid": {
+            "type": "string",
+            "nullable": true
+          },
+          "xmppUsername": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "username": {
+            "type": "string",
+            "nullable": true
+          },
+          "profileImage": {
+            "type": "string",
+            "nullable": true
+          },
+          "profilePicture": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "AuthTokens": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Access token (JWT / Bearer)."
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "wsToken": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "token",
+          "refreshToken"
+        ]
+      },
+      "LoginSuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "token": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "wsToken": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserPublic"
+          },
+          "isAllowedNewAppCreate": {
+            "type": "boolean",
+            "nullable": true
+          }
+        },
+        "required": [
+          "success",
+          "token",
+          "refreshToken",
+          "user"
+        ],
+        "additionalProperties": true
+      },
+      "MeResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "token": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "wsToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserPublic"
+          },
+          "app": {
+            "type": "object",
+            "properties": {
+              "isUserDataEncrypted": {
+                "type": "boolean",
+                "nullable": true
+              }
+            },
+            "additionalProperties": true
+          },
+          "isAllowedNewAppCreate": {
+            "type": "boolean",
+            "nullable": true
+          }
+        },
+        "required": [
+          "success",
+          "token",
+          "refreshToken",
+          "user"
+        ],
+        "additionalProperties": true
+      },
+      "FileRecord": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "ownerKey": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "locationPreview": {
+            "type": "string",
+            "nullable": true
+          },
+          "duration": {
+            "type": "string",
+            "nullable": true
+          },
+          "originalname": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "mimetype": {
+            "type": "string"
+          },
+          "size": {
+            "type": "number"
+          },
+          "expiresAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "isPrivate": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "FilesUploadResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileRecord"
+            }
+          }
+        },
+        "required": [
+          "success",
+          "results"
+        ]
+      },
+      "FilesListResponse": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileRecord"
+            }
+          }
+        },
+        "required": [
+          "limit",
+          "offset",
+          "total",
+          "items"
+        ]
+      },
+      "ChatRecord": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "picture": {
+            "type": "string",
+            "nullable": true
+          },
+          "appId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "reported": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserPublic"
+            },
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "ChatCreateResponse": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "$ref": "#/components/schemas/ChatRecord"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      },
+      "ChatListResponse": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatRecord"
+            }
+          }
+        },
+        "required": [
+          "results"
+        ]
+      },
+      "ChatMyRoomsResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatRecord"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ChatMyRoomResponse": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "$ref": "#/components/schemas/ChatRecord"
+          }
+        },
+        "required": [
+          "result"
+        ]
+      },
+      "PublicChatsResponse": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatRecord"
+            }
+          }
+        },
+        "required": [
+          "limit",
+          "offset",
+          "total",
+          "items"
+        ]
+      },
+      "SharelinkRecord": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "walletAddress": {
+            "type": "string"
+          },
+          "expiration": {
+            "type": "number"
+          },
+          "memo": {
+            "type": "string",
+            "nullable": true
+          },
+          "resource": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          },
+          "targetRecordId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "SharelinkCreateResponse": {
+        "type": "object",
+        "properties": {
+          "sharelinkData": {
+            "$ref": "#/components/schemas/SharelinkRecord"
+          }
+        },
+        "required": [
+          "sharelinkData"
+        ]
+      },
+      "SharelinkListResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SharelinkRecord"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "DefaultRoom": {
+        "type": "object",
+        "properties": {
+          "jid": {
+            "type": "string"
+          },
+          "pinned": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "jid"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad Request",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Unauthorized",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Forbidden",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Not Found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "UnprocessableEntity": {
+        "description": "Unprocessable Entity",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Internal Server Error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500,
+          "default": 100
+        },
+        "description": "Max number of items to return."
+      },
+      "Offset": {
+        "name": "offset",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "description": "Number of items to skip before starting to collect the result set."
+      }
+    }
+  },
+  "security": [
+    {
+      "JwtAuth": []
+    }
+  ],
+  "paths": {
+    "/v1/apps": {
+      "post": {
+        "description": "App creation",
+        "tags": [
+          "Apps"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "displayName"
+                ],
+                "properties": {
+                  "displayName": {
+                    "type": "string"
+                  },
+                  "domainName": {
+                    "type": "string"
+                  },
+                  "appDescription": {
+                    "type": "string"
+                  },
+                  "defaultAccessProfileOpen": {
+                    "type": "boolean"
+                  },
+                  "defaultAccessAssetsOpen": {
+                    "type": "boolean"
+                  },
+                  "usersCanFree": {
+                    "type": "boolean"
+                  },
+                  "logoImage": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "loginScreenBackgroundImage": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "coinLogoImage": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "bundleId": {
+                    "type": "string"
+                  },
+                  "primaryColor": {
+                    "type": "string"
+                  },
+                  "secondaryColor": {
+                    "type": "string"
+                  },
+                  "coinSymbol": {
+                    "type": "string"
+                  },
+                  "coinName": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  app: {\n    _id: string,\n    displayName: string,\n    domainName: string,\n    creatorId: string,\n    bundleId: string,\n    primaryColor: string,\n    secondaryColor: string,\n    coinSymbol: string,\n    coinName: boolean,\n    defaultAccessProfileOpen: boolean,\n    defaultAccessAssetsOpen: boolean,\n    usersCanFree: boolean,\n    isUserDataEncrypted: boolean,\n    parentAppId: boolean,\n    isAllowedNewAppCreate: boolean,\n    isBaseApp: boolean,\n    defaultRooms: [{jid: string, pinned: boolean}],\n    createdAt: string,\n    updatedAt: string,\n    appToken: string,\n    stats: {\n      totalRegistered: number,\n      recentlyRegistered: number,\n      totalSessions: number,\n      recentlySessions: number,\n      totalApiCalls: number,\n      recentlyApiCalls: number,\n      totalFiles: number,\n      recentlyFiles: number,\n      totalTransactions: number,\n      recentlyTransactions: number,\n      totalIssuance: number,\n      recentlyIssuance: number,\n    }\n  },\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "Something wrong with input data (validations error & ACL error)\n```\n {error: string}\n```"
+          },
+          "500": {
+            "description": "Internal server error\n```\n {error: string}\n```"
+          }
+        },
+        "operationId": "post_v1_apps"
+      },
+      "get": {
+        "description": "Allows to get a list of all applications for which the user has reading permissions.",
+        "tags": [
+          "Apps"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "in": "query",
+            "name": "orderBy",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "displayName",
+                "totalRegistered",
+                "totalSessions",
+                "totalApiCalls",
+                "totalFiles",
+                "totalTransactions",
+                "createdAt",
+                "totalChats"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "order",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n{\n  apps: [{\n    _id: string,\n    displayName: string,\n    domainName: string,\n    creatorId: string,\n    bundleId: string,\n    primaryColor: string,\n    secondaryColor: string,\n    coinSymbol: string,\n    coinName: boolean,\n    defaultAccessProfileOpen: boolean,\n    defaultAccessAssetsOpen: boolean,\n    usersCanFree: boolean,\n    isUserDataEncrypted: boolean,\n    parentAppId: boolean,\n    isAllowedNewAppCreate: boolean,\n    isBaseApp: boolean,\n    defaultRooms: [{jid: string, pinned: boolean}],\n    createdAt: string,\n    updatedAt: string,\n    appToken: string,\n    stats: {\n      totalRegistered: number,\n      recentlyRegistered: number,\n      totalSessions: number,\n      recentlySessions: number,\n      totalApiCalls: number,\n      recentlyApiCalls: number,\n      totalFiles: number,\n      recentlyFiles: number,\n      totalTransactions: number,\n      recentlyTransactions: number,\n      totalIssuance: number,\n      recentlyIssuance: number,\n    }\n  }],\n  total: number,\n  limit: number,\n  offset: number\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "description": "Internal server error\n```\n {error: string}\n```"
+          }
+        },
+        "operationId": "get_v1_apps"
+      }
+    },
+    "/v1/apps/users/": {
+      "get": {
+        "description": "App creation",
+        "tags": [
+          "Apps"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "in": "query",
+            "name": "orderBy",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "firsName",
+                "lastName",
+                "createdAt"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "order",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "Something wrong with input data (validations error & ACL error)\n```\n {error: string}\n```"
+          },
+          "500": {
+            "description": "Internal server error\n```\n {error: string}\n```"
+          }
+        },
+        "operationId": "get_v1_apps_users_"
+      }
+    },
+    "/v1/apps/users/{xmppUsername}": {
+      "get": {
+        "description": "App creation",
+        "tags": [
+          "Apps"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "xmppUsername",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "Something wrong with input data (validations error & ACL error)\n```\n {error: string}\n```"
+          },
+          "500": {
+            "description": "Internal server error\n```\n {error: string}\n```"
+          }
+        },
+        "operationId": "get_v1_apps_users_xmppusername"
+      }
+    },
+    "/v1/apps/{id}": {
+      "put": {
+        "description": "App update",
+        "tags": [
+          "Apps"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "displayName": {
+                    "type": "string"
+                  },
+                  "domainName": {
+                    "type": "string"
+                  },
+                  "appDescription": {
+                    "type": "string"
+                  },
+                  "defaultAccessProfileOpen": {
+                    "type": "boolean"
+                  },
+                  "defaultAccessAssetsOpen": {
+                    "type": "boolean"
+                  },
+                  "usersCanFree": {
+                    "type": "boolean"
+                  },
+                  "loginScreenBackgroundImage": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "coinLogoImage": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "googleServicesJson": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "GoogleServiceInfoPlist": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "GoogleServiceInfoPlist2": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "primaryColor": {
+                    "type": "string"
+                  },
+                  "secondaryColor": {
+                    "type": "string"
+                  },
+                  "coinSymbol": {
+                    "type": "string"
+                  },
+                  "coinName": {
+                    "type": "string"
+                  },
+                  "firebaseWebConfigString": {
+                    "type": "string"
+                  },
+                  "loginBackgroundColor": {
+                    "type": "string"
+                  },
+                  "logoImage": {
+                    "type": "string"
+                  },
+                  "sublogoImage": {
+                    "type": "string"
+                  },
+                  "appTagline": {
+                    "type": "string"
+                  },
+                  "defaultRooms": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/DefaultRooms"
+                    }
+                  },
+                  "botStatus": {
+                    "type": "string"
+                  },
+                  "botPrompt": {
+                    "type": "string"
+                  },
+                  "botGreetingMessage": {
+                    "type": "string"
+                  },
+                  "botTrigger": {
+                    "type": "string"
+                  },
+                  "botChatId": {
+                    "type": "string"
+                  },
+                  "botFirstName": {
+                    "type": "string"
+                  },
+                  "botLastName": {
+                    "type": "string"
+                  },
+                  "botIsRAG": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  result: {\n    _id: string,\n    displayName: string,\n    domainName: string,\n    creatorId: string,\n    bundleId: string,\n    primaryColor: string,\n    secondaryColor: string,\n    coinSymbol: string,\n    coinName: boolean,\n    defaultAccessProfileOpen: boolean,\n    defaultAccessAssetsOpen: boolean,\n    usersCanFree: boolean,\n    isUserDataEncrypted: boolean,\n    parentAppId: boolean,\n    isAllowedNewAppCreate: boolean,\n    isBaseApp: boolean,\n    defaultRooms: [{jid: string, pinned: boolean}],\n    createdAt: string,\n    updatedAt: string,\n    appToken: string,\n  },\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "Something wrong with input data (validations error & ACL error)\n```\n {error: string}\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "put_v1_apps_id"
+      },
+      "delete": {
+        "description": "App delete",
+        "tags": [
+          "Apps"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "Something wrong with input data (validations error & ACL error)\n```\n {error: string}\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "delete_v1_apps_id"
+      },
+      "get": {
+        "description": "Allows to get a list of all applications for which the user has reading permissions.",
+        "tags": [
+          "Apps"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "in": "query",
+            "name": "orderBy",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "displayName",
+                "totalRegistered",
+                "totalSessions",
+                "totalApiCalls",
+                "totalFiles",
+                "totalTransactions",
+                "createdAt",
+                "totalChats"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "order",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n{\n  apps: [{\n    _id: string,\n    displayName: string,\n    domainName: string,\n    creatorId: string,\n    bundleId: string,\n    primaryColor: string,\n    secondaryColor: string,\n    coinSymbol: string,\n    coinName: boolean,\n    defaultAccessProfileOpen: boolean,\n    defaultAccessAssetsOpen: boolean,\n    usersCanFree: boolean,\n    isUserDataEncrypted: boolean,\n    parentAppId: boolean,\n    isAllowedNewAppCreate: boolean,\n    isBaseApp: boolean,\n    defaultRooms: [{jid: string, pinned: boolean}],\n    createdAt: string,\n    updatedAt: string,\n    appToken: string,\n    stats: {\n      totalRegistered: number,\n      recentlyRegistered: number,\n      totalSessions: number,\n      recentlySessions: number,\n      totalApiCalls: number,\n      recentlyApiCalls: number,\n      totalFiles: number,\n      recentlyFiles: number,\n      totalTransactions: number,\n      recentlyTransactions: number,\n      totalIssuance: number,\n      recentlyIssuance: number,\n    }\n  }],\n  total: number,\n  limit: number,\n  offset: number\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "description": "Internal server error\n```\n {error: string}\n```"
+          }
+        },
+        "operationId": "get_v1_apps_id"
+      }
+    },
+    "/v1/apps/create-app-chat/{id}": {
+      "post": {
+        "description": "App update",
+        "tags": [
+          "Apps"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "pinned"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "pinned": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  result: {\n    title: string,\n    jid: string,\n    creator: string,\n  },\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "Something wrong with input data (validations error & ACL error)\n```\n {error: string}\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "post_v1_apps_create_app_chat_id"
+      }
+    },
+    "/v1/apps/delete-app-chat/{id}": {
+      "delete": {
+        "description": "App update",
+        "tags": [
+          "Apps"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "chatJid"
+                ],
+                "properties": {
+                  "chatJid": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  result: {\n    title: string,\n    jid: string,\n    creator: string,\n  },\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "Something wrong with input data (validations error & ACL error)\n```\n {error: string}\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "delete_v1_apps_delete_app_chat_id"
+      }
+    },
+    "/v1/apps/user-defaults/{id}": {
+      "put": {
+        "description": "App update",
+        "tags": [
+          "Apps"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "defaultAccessProfileOpen": {
+                    "type": "boolean"
+                  },
+                  "defaultAccessAssetsOpen": {
+                    "type": "boolean"
+                  },
+                  "usersCanFree": {
+                    "type": "boolean"
+                  },
+                  "defaultRooms": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/DefaultRooms"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n    _id: string,\n    displayName: string,\n    domainName: string,\n    creatorId: string,\n    bundleId: string,\n    primaryColor: string,\n    secondaryColor: string,\n    coinSymbol: string,\n    coinName: boolean,\n    defaultAccessProfileOpen: boolean,\n    defaultAccessAssetsOpen: boolean,\n    usersCanFree: boolean,\n    isUserDataEncrypted: boolean,\n    parentAppId: boolean,\n    isAllowedNewAppCreate: boolean,\n    isBaseApp: boolean,\n    defaultRooms: [{jid: string, pinned: boolean}],\n    createdAt: string,\n    updatedAt: string,\n    appToken: string,\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "Something wrong with input data (validations error & ACL error)\n```\n {error: string}\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "put_v1_apps_user_defaults_id"
+      }
+    },
+    "/v1/apps/check-domain-name": {
+      "post": {
+        "description": "check domain name",
+        "tags": [
+          "Apps"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "domainName"
+                ],
+                "properties": {
+                  "domainName": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  exists: false,\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "Something wrong with input data (validations error & ACL error)\n```\n {error: string} | {exists: true}\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "post_v1_apps_check_domain_name"
+      }
+    },
+    "/v1/apps/get-config": {
+      "get": {
+        "description": "get app data config",
+        "tags": [
+          "Apps"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "domainName",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n{\n  result: {\n    _id: string,\n    displayName: string,\n    domainName: string,\n    creatorId: string,\n    bundleId: string,\n    primaryColor: string,\n    secondaryColor: string,\n    coinSymbol: string,\n    coinName: boolean,\n    defaultAccessProfileOpen: boolean,\n    defaultAccessAssetsOpen: boolean,\n    usersCanFree: boolean,\n    isUserDataEncrypted: boolean,\n    parentAppId: boolean,\n    isAllowedNewAppCreate: boolean,\n    isBaseApp: boolean,\n    defaultRooms: [{jid: string, pinned: boolean}],\n    createdAt: string,\n    updatedAt: string,\n    appToken: string,\n  },\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not found\n```\n {error: string}\n```"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "get_v1_apps_get_config"
+      }
+    },
+    "/v1/apps/get-default-rooms": {
+      "get": {
+        "description": "**Auth**: App JWT\n\nreturns default rooms for application, appJwt is required",
+        "tags": [
+          "Apps"
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n[{jid: string, pinned: boolean}]\n```",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DefaultRoom"
+                  }
+                },
+                "examples": {
+                  "default_rooms": {
+                    "value": [
+                      {
+                        "jid": "APP_ID_room1@conference.localhost",
+                        "pinned": true
+                      },
+                      {
+                        "jid": "APP_ID_room2@conference.localhost",
+                        "pinned": false
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "AppJwtAuth": []
+          }
+        ],
+        "operationId": "get_v1_apps_get_default_rooms"
+      }
+    },
+    "/v1/apps/get-default-rooms/app-id/{appId}": {
+      "get": {
+        "description": "**Auth**: User JWT\n\nreturn default rooms for application, userJwt is required",
+        "tags": [
+          "Apps"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n[{jid: string, pinned: boolean}]\n```",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DefaultRoom"
+                  }
+                },
+                "examples": {
+                  "default_rooms": {
+                    "value": [
+                      {
+                        "jid": "APP_ID_room1@conference.localhost",
+                        "pinned": true
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "ACL error\n```\n {error: string}\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "UserJwtAuth": []
+          }
+        ],
+        "operationId": "get_v1_apps_get_default_rooms_app_id_appid"
+      }
+    },
+    "/v1/apps/rotate-jwt/{id}": {
+      "delete": {
+        "description": "rotate app jwt",
+        "tags": [
+          "Apps"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n{\n  app: {\n    _id: string,\n    displayName: string,\n    domainName: string,\n    creatorId: string,\n    bundleId: string,\n    primaryColor: string,\n    secondaryColor: string,\n    coinSymbol: string,\n    coinName: boolean,\n    defaultAccessProfileOpen: boolean,\n    defaultAccessAssetsOpen: boolean,\n    usersCanFree: boolean,\n    isUserDataEncrypted: boolean,\n    parentAppId: boolean,\n    isAllowedNewAppCreate: boolean,\n    isBaseApp: boolean,\n    defaultRooms: [{jid: string, pinned: boolean}],\n    createdAt: string,\n    updatedAt: string,\n    appToken: string,\n  },\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not found\n```\n {error: string}\n```"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "delete_v1_apps_rotate_jwt_id"
+      }
+    },
+    "/v1/apps/graph-statistic/{appId}": {
+      "get": {
+        "description": "get app statistic",
+        "tags": [
+          "Apps"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "startDate",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n{\n    sessionsCount: number,\n    apiCallCount: number,\n    issuanceCount: number,\n    transactionsCount: number,\n    sessions: {x: [number], y: [number]},\n    apiCalls: {x: [number], y: [number]},\n    issuance: {x: [number], y: [number]},\n    transactions: {x: [number], y: [number]},\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "ACL error\n```\n {error: string}\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "get_v1_apps_graph_statistic_appid"
+      }
+    },
+    "/v1/apps/stat-csv": {
+      "get": {
+        "description": "Get statistics for the applications the user has access to in CSV format.",
+        "tags": [
+          "Apps"
+        ],
+        "responses": {
+          "200": {
+            "description": "ok"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "description": "Internal server error\n```\n {error: string}\n```"
+          }
+        },
+        "operationId": "get_v1_apps_stat_csv"
+      }
+    },
+    "/v1/files/": {
+      "post": {
+        "description": "**Auth**: User JWT\n\nFiles upload",
+        "tags": [
+          "Files"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "files"
+                ],
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  success: boolean,\n  results: [{\n    userId: string,\n    ownerKey: string,\n    location: string,\n    locationPreview?: string,\n    duration?: string,\n    originalname: string,\n    filename: string,\n    mimetype: string,\n    size: string,\n    expiresAt: string,\n    isPrivate: string,\n    _id: string,\n    createdAt: string,\n    updatedAt: string,\n  }],\n}\n```",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilesUploadResponse"
+                },
+                "examples": {
+                  "success": {
+                    "value": {
+                      "success": true,
+                      "results": [
+                        {
+                          "_id": "65f1a9c8e2b4c10012345678",
+                          "userId": "65f1a9c8e2b4c10087654321",
+                          "ownerKey": "user",
+                          "location": "https://cdn.example.com/uploads/2026/01/file.jpg",
+                          "locationPreview": "https://cdn.example.com/uploads/2026/01/file_preview.jpg",
+                          "originalname": "file.jpg",
+                          "filename": "file_1700000000.jpg",
+                          "mimetype": "image/jpeg",
+                          "size": "12345",
+                          "expiresAt": "2026-12-31T23:59:59.000Z",
+                          "isPrivate": "false",
+                          "createdAt": "2026-01-01T12:00:00.000Z",
+                          "updatedAt": "2026-01-01T12:00:00.000Z"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "description": "Internal server error\n```\n {error: string}\n```"
+          }
+        },
+        "security": [
+          {
+            "UserJwtAuth": []
+          }
+        ],
+        "operationId": "post_v1_files_"
+      },
+      "get": {
+        "description": "**Auth**: User JWT\n\nget files created by user (JWT owner)",
+        "tags": [
+          "Files"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n{\n  limit: number,\n  offset: number,\n  total: number,\n  items: [{\n    userId: string,\n    ownerKey: string,\n    location: string,\n    locationPreview?: string,\n    duration?: string,\n    originalname: string,\n    filename: string,\n    mimetype: string,\n    size: string,\n    expiresAt: string,\n    isPrivate: string,\n    _id: string,\n    createdAt: string,\n    updatedAt: string,\n  }],\n}\n```",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilesListResponse"
+                },
+                "examples": {
+                  "list": {
+                    "value": {
+                      "limit": 10,
+                      "offset": 0,
+                      "total": 1,
+                      "items": [
+                        {
+                          "_id": "65f1a9c8e2b4c10012345678",
+                          "userId": "65f1a9c8e2b4c10087654321",
+                          "ownerKey": "user",
+                          "location": "https://cdn.example.com/uploads/2026/01/file.jpg",
+                          "originalname": "file.jpg",
+                          "filename": "file_1700000000.jpg",
+                          "mimetype": "image/jpeg",
+                          "size": "12345",
+                          "expiresAt": "2026-12-31T23:59:59.000Z",
+                          "isPrivate": "false",
+                          "createdAt": "2026-01-01T12:00:00.000Z",
+                          "updatedAt": "2026-01-01T12:00:00.000Z"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "UserJwtAuth": []
+          }
+        ],
+        "operationId": "get_v1_files_"
+      }
+    },
+    "/v1/files/{id}": {
+      "get": {
+        "description": "**Auth**: User JWT\n\nget file created by user (JWT owner) by id",
+        "tags": [
+          "Files"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n{\n    userId: string,\n    ownerKey: string,\n    location: string,\n    locationPreview?: string,\n    duration?: string,\n    originalname: string,\n    filename: string,\n    mimetype: string,\n    size: string,\n    expiresAt: string,\n    isPrivate: string,\n    _id: string,\n    createdAt: string,\n    updatedAt: string,\n}\n```",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileRecord"
+                },
+                "examples": {
+                  "file": {
+                    "value": {
+                      "_id": "65f1a9c8e2b4c10012345678",
+                      "userId": "65f1a9c8e2b4c10087654321",
+                      "ownerKey": "user",
+                      "location": "https://cdn.example.com/uploads/2026/01/file.jpg",
+                      "originalname": "file.jpg",
+                      "filename": "file_1700000000.jpg",
+                      "mimetype": "image/jpeg",
+                      "size": "12345",
+                      "expiresAt": "2026-12-31T23:59:59.000Z",
+                      "isPrivate": "false",
+                      "createdAt": "2026-01-01T12:00:00.000Z",
+                      "updatedAt": "2026-01-01T12:00:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "description": "Server side error"
+          }
+        },
+        "security": [
+          {
+            "UserJwtAuth": []
+          }
+        ],
+        "operationId": "get_v1_files_id"
+      },
+      "delete": {
+        "description": "**Auth**: User JWT\n\ndelete created by user (JWT owner) by id",
+        "tags": [
+          "Files"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n{\n    success: boolean,\n}\n```",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "examples": {
+                  "deleted": {
+                    "value": {
+                      "success": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "UserJwtAuth": []
+          }
+        ],
+        "operationId": "delete_v1_files_id"
+      }
+    },
+    "/v1/users/": {
+      "post": {
+        "summary": "end user' google, facebook, apple, crypto' signature",
+        "description": "**Auth**: App JWT\n\nCrate End user endpoint, should be used with Authorization header set to App JWT.\nApp JWT example: {JWT token}\n",
+        "tags": [
+          "Users"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/UserGoogleAppleFacebookLogin"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SignatureRegistration"
+                  }
+                ]
+              },
+              "examples": {
+                "social": {
+                  "value": {
+                    "loginType": "google | facebook | apple",
+                    "password": "pass",
+                    "authToken": "token"
+                  }
+                },
+                "signature": {
+                  "value": {
+                    "loginType": "signature",
+                    "walletAddress": "0xd374e71b0943d2ca83968cb3c41332fc693a7427",
+                    "signature": "0xc83dcf6b475cf99026505658d87741ce9180cc0b4a4ab78d7044d3b9e9d3fdf153e3e9c9c549c06ca26581cdf5398b485129a64affdcc2357b4de68283fe4a541c",
+                    "msg": "Register",
+                    "firsName": "Crypto",
+                    "lastName": "Man"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "```\n{\n  success: boolean,\n  user: {\n    defaultWallet: {\n      walletAddress: string\n    },\n    _id: string,\n    firstName: string,\n    lastName: string,\n    email: string,\n    username: string,\n    tags: string[],\n    profileImage: string,\n    emails: [\n      {\n        loginType: string,\n        email: string,\n        verified: boolean,\n        _id: string\n      }\n    ],\n    appId: string,\n    xmppPassword: string,\n    roles: string[],\n    isProfileOpen: boolean,\n    isAssetsOpen: boolean,\n    isAgreeWithTerms: boolean,\n    homeScreen: string,\n    registrationChannelType: string,\n    createdAt: string,\n    updatedAt: string\n  },\n  msg: string,\n  token: string,\n  refreshToken: string\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { errors: [{msg: string}] }\n```"
+          },
+          "500": {
+            "description": "```\n  {error: string}\n```"
+          }
+        },
+        "security": [
+          {
+            "AppJwtAuth": []
+          }
+        ],
+        "operationId": "post_v1_users_"
+      },
+      "put": {
+        "description": "**Auth**: App JWT\n\nUpdate current users",
+        "tags": [
+          "Users"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "firstName": {
+                    "type": "string"
+                  },
+                  "lastName": {
+                    "type": "string"
+                  },
+                  "username": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "company": {
+                    "type": "string"
+                  },
+                  "addressLine1": {
+                    "type": "string"
+                  },
+                  "addressLine2": {
+                    "type": "string"
+                  },
+                  "street": {
+                    "type": "string"
+                  },
+                  "city": {
+                    "type": "string"
+                  },
+                  "country": {
+                    "type": "string"
+                  },
+                  "zip": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "isProfileOpen": {
+                    "type": "boolean"
+                  },
+                  "isAssetsOpen": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  user: {\n    defaultWallet: {\n      walletAddress: string\n    },\n    isSuperAdmin?: {\n      read: boolean,\n      write: boolean\n    },\n    _id: string,\n    firstName: string,\n    lastName: string,\n    email: string,\n    username: string,\n    tags: string[],\n    profileImage: string,\n    emails: [\n      {\n        loginType: string,\n        email: string,\n        verified: boolean,\n        _id: string\n      }\n    ],\n    appId: string,\n    xmppPassword: string,\n    roles: string[],\n    isProfileOpen: boolean,\n    isAssetsOpen: boolean,\n    isAgreeWithTerms: boolean,\n    homeScreen: string,\n    registrationChannelType: string,\n    createdAt: string,\n    updatedAt: string\n  }\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  {error: string}\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "AppJwtAuth": []
+          }
+        ],
+        "operationId": "put_v1_users_"
+      }
+    },
+    "/v1/users/sign-up-with-email/": {
+      "post": {
+        "summary": "Users are allowed to register from the application, but they will need an authorization token from the corresponding application.",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "firstName": {
+                    "type": "string"
+                  },
+                  "lastName": {
+                    "type": "string"
+                  },
+                  "signupPlan": {
+                    "type": "string",
+                    "enum": [
+                      "business",
+                      "free"
+                    ]
+                  },
+                  "utm": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "description": "**Auth**: App JWT",
+        "security": [
+          {
+            "AppJwtAuth": []
+          }
+        ],
+        "operationId": "post_v1_users_sign_up_with_email_"
+      }
+    },
+    "/v2/users/sign-up-with-email/": {
+      "post": {
+        "summary": "Users are allowed to register from the application, but they will need an authorization token from the corresponding application.",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "firstName": {
+                    "type": "string"
+                  },
+                  "lastName": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  },
+                  "cfToken": {
+                    "type": "string"
+                  },
+                  "utm": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "email",
+                  "firstName",
+                  "password",
+                  "cfToken"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "description": "**Auth**: App JWT",
+        "security": [
+          {
+            "AppJwtAuth": []
+          }
+        ],
+        "operationId": "post_v2_users_sign_up_with_email_"
+      }
+    },
+    "/v1/users/sign-up-resend-email/": {
+      "post": {
+        "summary": "if user do not receive the email, they can resend it",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "description": "**Auth**: App JWT",
+        "security": [
+          {
+            "AppJwtAuth": []
+          }
+        ],
+        "operationId": "post_v1_users_sign_up_resend_email_"
+      }
+    },
+    "/v1/users/create-with-app-id/{id}": {
+      "post": {
+        "summary": "If the user has the appropriate ACL, they can create other users for the application with the ID passed as a parameter",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "firstName": {
+                    "type": "string"
+                  },
+                  "lastName": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  user: {\n    defaultWallet: {\n      walletAddress: string\n    },\n    _id: string,\n    firstName: string,\n    lastName: string,\n    email: string,\n    username: string,\n    tags: string[],\n    profileImage: string,\n    emails: [\n      {\n        loginType: string,\n        email: string,\n        verified: boolean,\n        _id: string\n      }\n    ],\n    appId: string,\n    xmppPassword: string,\n    roles: string[],\n    isProfileOpen: boolean,\n    isAssetsOpen: boolean,\n    isAgreeWithTerms: boolean,\n    homeScreen: string,\n    registrationChannelType: string,\n    createdAt: string,\n    updatedAt: string\n  },\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "```\n  { error: 'Forbidden' }\n```"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "post_v1_users_create_with_app_id_id"
+      }
+    },
+    "/v1/users/create-many-with-app-id/{id}": {
+      "post": {
+        "summary": "If the user has the appropriate ACL, they can create other users for the application with the ID passed as a parameter",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "usersList": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/UserData"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n  results: [\n     {\n        defaultWallet: {\n          walletAddress: string\n        },\n        _id: string,\n        firstName: string,\n        lastName: string,\n        email: string,\n        username: string,\n        tags: string[],\n        profileImage: string,\n        emails: [\n          {\n            loginType: string,\n            email: string,\n            verified: boolean,\n            _id: string\n          }\n        ],\n        appId: string,\n        xmppPassword: string,\n        roles: string[],\n        isProfileOpen: boolean,\n        isAssetsOpen: boolean,\n        isAgreeWithTerms: boolean,\n        homeScreen: string,\n        registrationChannelType: string,\n        createdAt: string,\n        updatedAt: string\n      },\n    }\n  ]\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "```\n  { error: 'Forbidden' }\n```"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "post_v1_users_create_many_with_app_id_id"
+      }
+    },
+    "/v1/users/batch": {
+      "post": {
+        "summary": "create user with x-custom-token",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "bypassEmailConfirmation": {
+                    "type": "boolean"
+                  },
+                  "usersList": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/UserDataB2B"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n  results: [\n     {\n        defaultWallet: {\n          walletAddress: string\n        },\n        _id: string,\n        firstName: string,\n        lastName: string,\n        email: string,\n        username: string,\n        tags: string[],\n        profileImage: string,\n        emails: [\n          {\n            loginType: string,\n            email: string,\n            verified: boolean,\n            _id: string\n          }\n        ],\n        appId: string,\n        xmppPassword: string,\n        roles: string[],\n        isProfileOpen: boolean,\n        isAssetsOpen: boolean,\n        isAgreeWithTerms: boolean,\n        homeScreen: string,\n        registrationChannelType: string,\n        createdAt: string,\n        updatedAt: string\n      },\n    }\n  ]\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "```\n  { error: 'Forbidden' }\n```"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "post_v1_users_batch"
+      },
+      "delete": {
+        "description": "deleting user by user ids with x-custom-token",
+        "tags": [
+          "Users"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "usersIdList"
+                ],
+                "properties": {
+                  "usersIdList": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n  { ok: true }\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "delete_v1_users_batch"
+      }
+    },
+    "/v1/users/tags-set/{appId}": {
+      "post": {
+        "summary": "Set tags to the users. To preserve the previous user tags, they need to be sent along with the new tags.",
+        "description": "Set tags to the users. To preserve the previous user tags, they need to be sent along with the new tags. Allows do delete tags with [] tagsList.",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "usersIdList": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "tagsList": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "```\n  { error: 'Forbidden' }\n```"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "post_v1_users_tags_set_appid"
+      }
+    },
+    "/v1/users/tags-add/{appId}": {
+      "post": {
+        "summary": "Add tags to the users.",
+        "description": "Add tags to the users.",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "usersIdList": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "tagsList": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "```\n  { error: 'Forbidden' }\n```"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "post_v1_users_tags_add_appid"
+      }
+    },
+    "/v1/users/tags-delete/{appId}": {
+      "post": {
+        "summary": "Removing tags specified in the request body from users.",
+        "description": "Removing tags specified in the request body from users.",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "usersIdList": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "tagsList": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "```\n  { error: 'Forbidden' }\n```"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "post_v1_users_tags_delete_appid"
+      }
+    },
+    "/v1/users/terms-and-conditions": {
+      "post": {
+        "summary": "post terms and conditions",
+        "tags": [
+          "Users"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "isAgreeWithTerms": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "post_v1_users_terms_and_conditions"
+      }
+    },
+    "/v1/users/login": {
+      "post": {
+        "summary": "end user' login by google, facebook, apple, crypto' signature",
+        "description": "**Auth**: App JWT\n\nEnd user login endpoint, should be used with Authorization header set to App JWT.\nApp JWT example: {JWT token}\n",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/UserGoogleAppleFacebookLogin"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SignatureLogin"
+                  }
+                ]
+              },
+              "examples": {
+                "social": {
+                  "value": {
+                    "loginType": "google | facebook | apple",
+                    "password": "pass",
+                    "authToken": "token"
+                  }
+                },
+                "signature": {
+                  "value": {
+                    "loginType": "signature",
+                    "walletAddress": "0xd374e71b0943d2ca83968cb3c41332fc693a7427",
+                    "signature": "0xc83dcf6b475cf99026505658d87741ce9180cc0b4a4ab78d7044d3b9e9d3fdf153e3e9c9c549c06ca26581cdf5398b485129a64affdcc2357b4de68283fe4a541c",
+                    "msg": "Login"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  success: boolean,\n  user: {\n    defaultWallet: {\n      walletAddress: string\n    },\n    _id: string,\n    firstName: string,\n    lastName: string,\n    email: string,\n    username: string,\n    tags: string[],\n    profileImage: string,\n    emails: [\n      {\n        loginType: string,\n        email: string,\n        verified: boolean,\n        _id: string\n      }\n    ],\n    appId: string,\n    xmppPassword: string,\n    roles: string[],\n    isProfileOpen: boolean,\n    isAssetsOpen: boolean,\n    isAgreeWithTerms: boolean,\n    homeScreen: string,\n    registrationChannelType: string,\n    createdAt: string,\n    updatedAt: string\n  },\n  token: string,\n  refreshToken: string\n}\n```",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginSuccessResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "user did not validate his email in registration step"
+          },
+          "422": {
+            "description": "```\n  { errors: [{msg: string}] }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "AppJwtAuth": []
+          }
+        ],
+        "operationId": "post_v1_users_login"
+      }
+    },
+    "/v1/users/me": {
+      "get": {
+        "summary": "get user data with user access token",
+        "description": "**Auth**: User JWT\n\nget user data with user access token\n",
+        "tags": [
+          "Users"
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n{\n  success: boolean,\n  user: {\n    defaultWallet: {\n      walletAddress: string\n    },\n    _id: string,\n    firstName: string,\n    lastName: string,\n    email: string,\n    username: string,\n    tags: string[],\n    profileImage: string,\n    emails: [\n      {\n        loginType: string,\n        email: string,\n        verified: boolean,\n        _id: string\n      }\n    ],\n    appId: string,\n    xmppPassword: string,\n    roles: string[],\n    isProfileOpen: boolean,\n    isAssetsOpen: boolean,\n    isAgreeWithTerms: boolean,\n    homeScreen: string,\n    registrationChannelType: string,\n    createdAt: string,\n    updatedAt: string\n  },\n  token: string,\n  refreshToken: string\n}\n```",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "UserJwtAuth": []
+          }
+        ],
+        "operationId": "get_v1_users_me"
+      }
+    },
+    "/v1/users/login-with-email": {
+      "post": {
+        "summary": "login with email and password",
+        "description": "**Auth**: App JWT\n\nEnd user login endpoint, should be used with Authorization header set to App JWT.\nEthora App JWT example: JWT eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7Il9pZCI6IjYxZTU1YzlkOTBlYTk5NTk0YmM3ZTZhMiIsImFwcE5hbWUiOiJFdGhvcmEiLCJhcHBHb29nbGVJZCI6Ijk3MjkzMzQ3MDA1NC1oYnNmMjlvaHBhdG83NnRpbDJqdGY2amdnMWI0Mzc0Yy5hcHBzLmdvb2dsZXVzZXJjb250ZW50LmNvbSIsImNyZWF0b3JJZCI6IjYyYzNmNGE5M2FkMjcwNjc0YzFmNjJmYiIsImNyZWF0ZWRBdCI6IjIwMjItMDctMDVUMDg6Mjc6MjYuMzM2WiIsIl9fdiI6MH0sImlhdCI6MTY1NzAwOTY1OH0.dnvrO_dQ_2GLyUX-b71CcHFDnphpjeTYOxz6vZ2fsPY\n",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  success: boolean,\n  user: {\n    defaultWallet: {\n      walletAddress: string\n    },\n    isSuperAdmin: {\n      read: boolean,\n      write: boolean\n    },\n    _id: string,\n    firstName: string,\n    lastName: string,\n    email: string,\n    username: string,\n    tags: string[],\n    profileImage: string,\n    emails: [\n      {\n        loginType: string,\n        email: string,\n        verified: boolean,\n        _id: string\n      }\n    ],\n    appId: string,\n    xmppPassword: string,\n    roles: string[],\n    isProfileOpen: boolean,\n    isAssetsOpen: boolean,\n    isAgreeWithTerms: boolean,\n    homeScreen: string,\n    registrationChannelType: string,\n    createdAt: string,\n    updatedAt: string\n  },\n  token: string,\n  refreshToken: string\n}\n```",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginSuccessResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "AppJwtAuth": []
+          }
+        ],
+        "operationId": "post_v1_users_login_with_email"
+      }
+    },
+    "/v1/users/logout": {
+      "post": {
+        "summary": "logout user",
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "current",
+                "except-current"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "post_v1_users_logout"
+      }
+    },
+    "/v1/users/client": {
+      "post": {
+        "summary": "get user creds with x-custom-token (should be created with 3d party backend)",
+        "description": "Use x-custom-token with payload data={type: 'client', appId: '', userId: ''} in Authorization headers\n",
+        "tags": [
+          "Users"
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n{\n  success: boolean,\n  user: {\n    defaultWallet: {\n      walletAddress: string\n    },\n    isSuperAdmin: {\n      read: boolean,\n      write: boolean\n    },\n    _id: string,\n    firstName: string,\n    lastName: string,\n    email: string,\n    username: string,\n    tags: string[],\n    profileImage: string,\n    emails: [\n      {\n        loginType: string,\n        email: string,\n        verified: boolean,\n        _id: string\n      }\n    ],\n    appId: string,\n    xmppPassword: string,\n    roles: string[],\n    isProfileOpen: boolean,\n    isAssetsOpen: boolean,\n    isAgreeWithTerms: boolean,\n    homeScreen: string,\n    registrationChannelType: string,\n    createdAt: string,\n    updatedAt: string\n  },\n  token: string,\n  refreshToken: string\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "post_v1_users_client"
+      }
+    },
+    "/v1/users/set-permanent-password-with-temp-password": {
+      "post": {
+        "summary": "set-permanent-password-with-temp-password",
+        "tags": [
+          "Auth"
+        ],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tempPassword": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n{\n  error: string,\n}\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "description": "**Auth**: None (temp password flow)",
+        "operationId": "post_v1_users_set_permanent_password_with_temp_password"
+      }
+    },
+    "/v1/users/login/refresh": {
+      "post": {
+        "description": "**Auth**: Refresh token (JWT)\n\nUser refreshing",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n{\n  token: string,\n  refreshToken: string\n}\n```",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthTokens"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "RefreshJwtAuth": []
+          }
+        ],
+        "operationId": "post_v1_users_login_refresh"
+      }
+    },
+    "/v1/users/changePassword": {
+      "post": {
+        "description": "**Auth**: User JWT\n\nchange user password",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "password": {
+                    "type": "string"
+                  },
+                  "npassword": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  success: boolean,\n  msg: string\n} |\n{\n  success: false,\n  msg: 'Wrong Current Password'\n} |\n{\n  success: false,\n  errors: [{msg: string}]\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "UserJwtAuth": []
+          }
+        ],
+        "operationId": "post_v1_users_changepassword"
+      }
+    },
+    "/v1/users/verifyEmail": {
+      "post": {
+        "description": "e-mail verification",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "password": {
+                    "type": "string"
+                  },
+                  "npassword": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  success: boolean,\n  msg: string\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n{\n  errors: [{msg: string}]\n}\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "post_v1_users_verifyemail"
+      }
+    },
+    "/v1/users/resendLink": {
+      "post": {
+        "description": "resend email verification link",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  success: boolean,\n  msg: string\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "description": "```\n{\n  error: string\n}\n```"
+          }
+        },
+        "operationId": "post_v1_users_resendlink"
+      }
+    },
+    "/v1/users/forgot": {
+      "post": {
+        "description": "**Auth**: App JWT\n\nrequests a password reset",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  success: boolean,\n  msg: string\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n{\n  error: string\n}\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "AppJwtAuth": []
+          }
+        ],
+        "operationId": "post_v1_users_forgot"
+      }
+    },
+    "/v1/users/reset": {
+      "post": {
+        "description": "**Auth**: None (reset token in body)\n\nresets a user's password",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n{\n  error: string\n}\n```"
+          },
+          "500": {
+            "description": "```\n{\n  error: string\n}\n```"
+          }
+        },
+        "security": [],
+        "operationId": "post_v1_users_reset"
+      }
+    },
+    "/v1/users/checkEmail/{email}": {
+      "get": {
+        "description": "**Auth**: App JWT\n\nroute to check if particular user exists in all database",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "email",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n{\n  success: boolean,\n  msg: string\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n{\n  error: string\n}\n```"
+          },
+          "500": {
+            "description": "```\n{\n  error: string\n}\n```"
+          }
+        },
+        "security": [
+          {
+            "AppJwtAuth": []
+          }
+        ],
+        "operationId": "get_v1_users_checkemail_email"
+      }
+    },
+    "/v1/users/{appId}": {
+      "get": {
+        "description": "get users",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "in": "query",
+            "name": "orderBy",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "email",
+                "createdAt",
+                "firstName",
+                "lastName"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "order",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n{\n  items: [\n    {\n      defaultWallet: {\n        walletAddress: string\n      },\n      isSuperAdmin: {\n        read: boolean,\n        write: boolean\n      },\n      _id: string,\n      firstName: string,\n      lastName: string,\n      email: string,\n      username: string,\n      tags: string[],\n      profileImage: string,\n      emails: [\n        {\n          loginType: string,\n          email: string,\n          verified: boolean,\n          _id: string\n        }\n      ],\n      appId: string,\n      xmppPassword: string,\n      roles: string[],\n      isProfileOpen: boolean,\n      isAssetsOpen: boolean,\n      isAgreeWithTerms: boolean,\n      homeScreen: string,\n      registrationChannelType: string,\n      createdAt: string,\n      updatedAt: string\n    }\n  ],\n  limit: number,\n  offset: number,\n  total: number,\n  orderBy: string,\n  order: string\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n{\n  error: string\n}\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "get_v1_users_appid"
+      }
+    },
+    "/v1/users/{appId}/{userId}": {
+      "put": {
+        "description": "Update users by id",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "firstName": {
+                    "type": "string"
+                  },
+                  "lastName": {
+                    "type": "string"
+                  },
+                  "username": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "company": {
+                    "type": "string"
+                  },
+                  "addressLine1": {
+                    "type": "string"
+                  },
+                  "addressLine2": {
+                    "type": "string"
+                  },
+                  "street": {
+                    "type": "string"
+                  },
+                  "city": {
+                    "type": "string"
+                  },
+                  "country": {
+                    "type": "string"
+                  },
+                  "zip": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "isProfileOpen": {
+                    "type": "boolean"
+                  },
+                  "isAssetsOpen": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  user: {\n    defaultWallet: {\n      walletAddress: string\n    },\n    isSuperAdmin?: {\n      read: boolean,\n      write: boolean\n    },\n    _id: string,\n    firstName: string,\n    lastName: string,\n    email: string,\n    username: string,\n    tags: string[],\n    profileImage: string,\n    emails: [\n      {\n        loginType: string,\n        email: string,\n        verified: boolean,\n        _id: string\n      }\n    ],\n    appId: string,\n    xmppPassword: string,\n    roles: string[],\n    isProfileOpen: boolean,\n    isAssetsOpen: boolean,\n    isAgreeWithTerms: boolean,\n    homeScreen: string,\n    registrationChannelType: string,\n    createdAt: string,\n    updatedAt: string\n  }\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n{\n  error: string\n}\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "put_v1_users_appid_userid"
+      }
+    },
+    "/v1/users/profile/{walletAddress}": {
+      "get": {
+        "description": "access to user profile",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "walletAddress",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "```\ntype CoinBalance = {tokenName: string, tokenSymbol: string, balance: number, contractAddress: string},\ntype NFTBalance = {\n  tokenName: string, \n  balance: number, \n  total: number, \n  imagePreview: string, \n  constractTokenIds: [number], \n  nftId: string,\n  tokenType: string,\n  nftFileUrl: string,\n  nftMetaUrl: string,\n  nftOriginalname: string,\n  nftMimetype: string,\n  createdAt: string,\n  updatedAt: string,\n  contractAddress: string,\n},\naxios.response.data = {\n  balances: [CoinBalance | NFTBalance],\n  documents: [],\n  firstName: string,\n  lastName: string,\n  description: string,\n  profileImage: string,\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n{\n  errors: [{msg: string}]\n}\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "get_v1_users_profile_walletaddress"
+      }
+    },
+    "/v1/users/profile/{walletAddress}/{accessToken}": {
+      "get": {
+        "description": "access to user profile",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "walletAddress",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "accessToken",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "```\ntype CoinBalance = {tokenName: string, tokenSymbol: string, balance: number, contractAddress: string},\ntype NFTBalance = {\n  tokenName: string, \n  balance: number, \n  total: number, \n  imagePreview: string, \n  constractTokenIds: [number], \n  nftId: string,\n  tokenType: string,\n  nftFileUrl: string,\n  nftMetaUrl: string,\n  nftOriginalname: string,\n  nftMimetype: string,\n  createdAt: string,\n  updatedAt: string,\n  contractAddress: string,\n},\naxios.response.data = {\n  balances: [CoinBalance | NFTBalance],\n  documents: [],\n  firstName: string,\n  lastName: string,\n  description: string,\n  profileImage: string,\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n{\n  errors: [{msg: string}]\n}\n```"
+          },
+          "498": {
+            "description": "Invalid accessToken"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "get_v1_users_profile_walletaddress_accesstoken"
+      }
+    },
+    "/v1/users/referral": {
+      "post": {
+        "description": "post new refferal",
+        "tags": [
+          "Users"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "referrerId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n  { success: true }\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n{\n  error: string\n}\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "post_v1_users_referral"
+      }
+    },
+    "/v1/users": {
+      "delete": {
+        "description": "deleting current user",
+        "tags": [
+          "Users"
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n  { ok: true }\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "delete_v1_users"
+      }
+    },
+    "/v1/users/delete-many-with-app-id/{id}": {
+      "post": {
+        "description": "deleting user by user id",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "usersIdList"
+                ],
+                "properties": {
+                  "usersIdList": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n  { ok: true }\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "post_v1_users_delete_many_with_app_id_id"
+      }
+    },
+    "/v1/users/reset-passwords-with-app-id/{id}": {
+      "post": {
+        "description": "reseting password for users from usersIdList",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "usersIdList"
+                ],
+                "properties": {
+                  "usersIdList": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n  { ok: true }\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "post_v1_users_reset_passwords_with_app_id_id"
+      }
+    },
+    "/v1/users/emails": {
+      "post": {
+        "description": "add emails",
+        "tags": [
+          "Users"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "loginType": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n  { success: true }\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { errors: [msg: string] }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "post_v1_users_emails"
+      },
+      "get": {
+        "description": "get user emails",
+        "tags": [
+          "Users"
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n  { emails: [{email: string, verified: boolean}] }\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "get_v1_users_emails"
+      }
+    },
+    "/v1/users/emails/{email}": {
+      "delete": {
+        "description": "deleting user email",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "email",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n  { success: true }\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "delete_v1_users_emails_email"
+      }
+    },
+    "/v1/users/payments": {
+      "post": {
+        "description": "payments",
+        "tags": [
+          "Users"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  },
+                  "transaction": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "post_v1_users_payments"
+      }
+    },
+    "/v1/users/checkExtWallet": {
+      "post": {
+        "description": "check if ext wallet exists",
+        "tags": [
+          "Users"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "walletAddress": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "post_v1_users_checkextwallet"
+      }
+    },
+    "/v1/users/acl": {
+      "get": {
+        "description": "get current user' acls",
+        "tags": [
+          "Users"
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n  {\n    result: [{\n      {\n        network: {\n          netStats: {\n            read: boolean,\n            disabled: ['create', 'update', 'delete', 'admin']\n          }\n        },\n        application: {\n          appCreate: {\n            craete: boolean,\n            disabled: ['read', 'update', 'delete', 'admin']\n          },\n          appSettings: {\n            read: boolean,\n            update: boolean,\n            admin: boolean,\n            disabled: ['create', 'delete']\n          },\n          appUsers: {\n            create: boolean,\n            read: boolean,\n            update: boolean,\n            delete: boolean,\n            admin: boolean\n          },\n          appTokens: {\n            create: boolean,\n            read: boolean,\n            update: boolean,\n            admin: boolean,\n            disabled: ['delete']\n          },\n          appPush: {\n            create: boolean,\n            read: boolean,\n            update: boolean,\n            admin: boolean,\n            disabled: ['delete']\n          },\n          appStats: {\n            read: boolean,\n            admin: boolean,\n            disabled: ['create', 'update', 'delete']\n          }\n        }\n      },\n      _id: string,\n      userId: string,\n      appId: string,\n      createdAt: string,\n      updatedAt: string\n    }]\n  }\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "get_v1_users_acl"
+      }
+    },
+    "/v1/users/acl/{appId}/{userId}": {
+      "put": {
+        "description": "update acl for appId and userId respectively",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "network": {
+                    "type": "object",
+                    "properties": {
+                      "netStats": {
+                        "type": "object",
+                        "properties": {
+                          "read": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "application": {
+                    "type": "object",
+                    "properties": {
+                      "appCreate": {
+                        "type": "object",
+                        "properties": {
+                          "create": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "appSettings": {
+                        "type": "object",
+                        "properties": {
+                          "read": {
+                            "type": "boolean"
+                          },
+                          "update": {
+                            "type": "boolean"
+                          },
+                          "admin": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "appUsers": {
+                        "type": "object",
+                        "properties": {
+                          "create": {
+                            "type": "boolean"
+                          },
+                          "read": {
+                            "type": "boolean"
+                          },
+                          "update": {
+                            "type": "boolean"
+                          },
+                          "delete": {
+                            "type": "boolean"
+                          },
+                          "admin": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "appTokens": {
+                        "type": "object",
+                        "properties": {
+                          "create": {
+                            "type": "boolean"
+                          },
+                          "read": {
+                            "type": "boolean"
+                          },
+                          "update": {
+                            "type": "boolean"
+                          },
+                          "admin": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "appPush": {
+                        "type": "object",
+                        "properties": {
+                          "create": {
+                            "type": "boolean"
+                          },
+                          "read": {
+                            "type": "boolean"
+                          },
+                          "update": {
+                            "type": "boolean"
+                          },
+                          "admin": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "appStats": {
+                        "type": "object",
+                        "properties": {
+                          "read": {
+                            "type": "boolean"
+                          },
+                          "admin": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n  {\n    result: {\n      {\n        network: {\n          netStats: {\n            read: boolean,\n            disabled: ['create', 'update', 'delete', 'admin']\n          }\n        },\n        application: {\n          appCreate: {\n            craete: boolean,\n            disabled: ['read', 'update', 'delete', 'admin']\n          },\n          appSettings: {\n            read: boolean,\n            update: boolean,\n            admin: boolean,\n            disabled: ['create', 'delete']\n          },\n          appUsers: {\n            create: boolean,\n            read: boolean,\n            update: boolean,\n            delete: boolean,\n            admin: boolean\n          },\n          appTokens: {\n            create: boolean,\n            read: boolean,\n            update: boolean,\n            admin: boolean,\n            disabled: ['delete']\n          },\n          appPush: {\n            create: boolean,\n            read: boolean,\n            update: boolean,\n            admin: boolean,\n            disabled: ['delete']\n          },\n          appStats: {\n            read: boolean,\n            admin: boolean,\n            disabled: ['create', 'update', 'delete']\n          }\n        }\n      },\n      _id: string,\n      userId: string,\n      appId: string,\n      createdAt: string,\n      updatedAt: string\n    }\n  }\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  {error: string}\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "put_v1_users_acl_appid_userid"
+      }
+    },
+    "/v1/users/exportData": {
+      "get": {
+        "description": "get current user' data as JSON file",
+        "tags": [
+          "Users"
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n  Content-disposition: attachment;filename=exportData.json\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "get_v1_users_exportdata"
+      }
+    },
+    "/v1/users/export/{appId}": {
+      "get": {
+        "description": "export users",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "tags": [
+          "Users"
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n  Content-disposition: attachment;filename=exportData.json\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "operationId": "get_v1_users_export_appid"
+      }
+    },
+    "/v1/sharelink": {
+      "post": {
+        "description": "**Auth**: User JWT\n\nsharelink creation",
+        "tags": [
+          "Sharelinks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expiration": {
+                    "type": "number"
+                  },
+                  "memo": {
+                    "type": "string"
+                  },
+                  "resource": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n   {sharelinkData: { \n     userId: string,\n     walletAddress: string,\n     expiration: string,\n     token: string,\n     targetRecordId: string,\n   }}\n```",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharelinkCreateResponse"
+                },
+                "examples": {
+                  "created": {
+                    "value": {
+                      "sharelinkData": {
+                        "userId": "65f1a9c8e2b4c10087654321",
+                        "walletAddress": "0x0000000000000000000000000000000000000000",
+                        "expiration": -1,
+                        "memo": "no description",
+                        "resource": "profile",
+                        "token": "65f1aa1de2b4c10012345681"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validations error"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "UserJwtAuth": []
+          }
+        ],
+        "operationId": "post_v1_sharelink"
+      }
+    },
+    "/v1/sharelink/": {
+      "get": {
+        "description": "**Auth**: User JWT\n\nDocs get",
+        "tags": [
+          "Sharelinks"
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n   {items: [{ \n     userId: string,\n     walletAddress: string,\n     expiration: string,\n     token: string,\n     targetRecordId: string,\n   }]}\n```",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharelinkListResponse"
+                },
+                "examples": {
+                  "list": {
+                    "value": {
+                      "items": [
+                        {
+                          "userId": "65f1a9c8e2b4c10087654321",
+                          "walletAddress": "0x0000000000000000000000000000000000000000",
+                          "expiration": -1,
+                          "memo": "no description",
+                          "resource": "profile",
+                          "token": "65f1aa1de2b4c10012345681"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "UserJwtAuth": []
+          }
+        ],
+        "operationId": "get_v1_sharelink_"
+      }
+    },
+    "/v1/sharelink/{token}": {
+      "delete": {
+        "description": "**Auth**: User JWT\n\nDocs get",
+        "tags": [
+          "Sharelinks"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "UserJwtAuth": []
+          }
+        ],
+        "operationId": "delete_v1_sharelink_token"
+      }
+    },
+    "/v1/chats": {
+      "post": {
+        "summary": "Create chat",
+        "description": "**Auth**: User JWT\n\nCreate chat",
+        "tags": [
+          "Chats"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "uuid": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "description": "public | group"
+                  },
+                  "picture": {
+                    "type": "string"
+                  },
+                  "members": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n}\n```",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatCreateResponse"
+                },
+                "examples": {
+                  "created": {
+                    "value": {
+                      "result": {
+                        "_id": "65f1aa1de2b4c10012345679",
+                        "name": "APP_ID_65f1aa1de2b4c10012345679",
+                        "title": "General",
+                        "description": "General discussion",
+                        "type": "public",
+                        "picture": "",
+                        "appId": "APP_ID",
+                        "createdBy": "65f1a9c8e2b4c10087654321",
+                        "createdAt": "2026-01-01T12:00:00.000Z",
+                        "updatedAt": "2026-01-01T12:00:00.000Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "```\n  { error: 'Forbidden' }\n```"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "UserJwtAuth": []
+          }
+        ],
+        "operationId": "post_v1_chats"
+      },
+      "get": {
+        "summary": "get chats created by current auth user",
+        "description": "**Auth**: User JWT\n\nget chats created by current auth user",
+        "tags": [
+          "Chats"
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n}\n```",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatListResponse"
+                },
+                "examples": {
+                  "my_created": {
+                    "value": {
+                      "results": [
+                        {
+                          "_id": "65f1aa1de2b4c10012345679",
+                          "name": "APP_ID_65f1aa1de2b4c10012345679",
+                          "title": "General",
+                          "description": "General discussion",
+                          "type": "public",
+                          "picture": "",
+                          "members": [
+                            {
+                              "xmppUsername": "APP_ID_user1",
+                              "firstName": "John",
+                              "lastName": "Doe",
+                              "profilePicture": "",
+                              "description": ""
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "```\n  { error: 'Forbidden' }\n```"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "UserJwtAuth": []
+          }
+        ],
+        "operationId": "get_v1_chats"
+      },
+      "delete": {
+        "summary": "Create chat",
+        "description": "**Auth**: User JWT\n\nCreate chat",
+        "tags": [
+          "Chats"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "```\n  { error: 'Forbidden' }\n```"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "UserJwtAuth": []
+          }
+        ],
+        "operationId": "delete_v1_chats"
+      }
+    },
+    "/v1/chats/private": {
+      "post": {
+        "summary": "Create private chat",
+        "description": "**Auth**: User JWT\n\nCreate chat private chat",
+        "tags": [
+          "Chats"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n}\n```",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "examples": {
+                  "private_chat": {
+                    "value": {
+                      "result": {
+                        "_id": "65f1aa1de2b4c10012345680",
+                        "type": "private",
+                        "name": "APP_ID_user1-APP_ID_user2",
+                        "title": "Jane Doe",
+                        "appId": "APP_ID",
+                        "members": [
+                          {
+                            "xmppUsername": "APP_ID_user1",
+                            "firstName": "John",
+                            "lastName": "Doe",
+                            "profilePicture": "",
+                            "description": ""
+                          },
+                          {
+                            "xmppUsername": "APP_ID_user2",
+                            "firstName": "Jane",
+                            "lastName": "Doe",
+                            "profilePicture": "",
+                            "description": ""
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "```\n  { error: 'Forbidden' }\n```"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "UserJwtAuth": []
+          }
+        ],
+        "operationId": "post_v1_chats_private"
+      }
+    },
+    "/v1/chats/reports/{chatName}": {
+      "post": {
+        "summary": "Report",
+        "tags": [
+          "Chats"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "chatName",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "type": "string"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "```\n  { error: 'Forbidden' }\n```"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "description": "**Auth**: User JWT",
+        "security": [
+          {
+            "UserJwtAuth": []
+          }
+        ],
+        "operationId": "post_v1_chats_reports_chatname"
+      }
+    },
+    "/v1/chats/my": {
+      "get": {
+        "summary": "get me chats",
+        "description": "**Auth**: User JWT\n\nget me chats",
+        "tags": [
+          "Chats"
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n}\n```",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatMyRoomsResponse"
+                },
+                "examples": {
+                  "my_rooms": {
+                    "value": {
+                      "items": [
+                        {
+                          "_id": "65f1aa1de2b4c10012345679",
+                          "name": "APP_ID_65f1aa1de2b4c10012345679",
+                          "title": "General",
+                          "description": "General discussion",
+                          "type": "public",
+                          "picture": "",
+                          "reported": false,
+                          "members": [
+                            {
+                              "xmppUsername": "APP_ID_user1",
+                              "firstName": "John",
+                              "lastName": "Doe",
+                              "profilePicture": "",
+                              "description": ""
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "```\n  { error: 'Forbidden' }\n```"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "UserJwtAuth": []
+          }
+        ],
+        "operationId": "get_v1_chats_my"
+      }
+    },
+    "/v1/chats/my/{chatName}": {
+      "get": {
+        "summary": "get my chat by chatName",
+        "description": "**Auth**: User JWT\n\nget my chat",
+        "tags": [
+          "Chats"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "chatName",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n}\n```",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatMyRoomResponse"
+                },
+                "examples": {
+                  "single_room": {
+                    "value": {
+                      "result": {
+                        "_id": "65f1aa1de2b4c10012345679",
+                        "name": "APP_ID_65f1aa1de2b4c10012345679",
+                        "title": "General",
+                        "description": "General discussion",
+                        "type": "public",
+                        "picture": "",
+                        "members": [
+                          {
+                            "xmppUsername": "APP_ID_user1",
+                            "firstName": "John",
+                            "lastName": "Doe",
+                            "profilePicture": "",
+                            "description": ""
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "```\n  { error: 'Forbidden' }\n```"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "UserJwtAuth": []
+          }
+        ],
+        "operationId": "get_v1_chats_my_chatname"
+      }
+    },
+    "/v1/chats/public": {
+      "get": {
+        "summary": "get public chats for current app",
+        "description": "**Auth**: User JWT\n\nget public chats for current app",
+        "tags": [
+          "Chats"
+        ],
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n}\n```",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicChatsResponse"
+                },
+                "examples": {
+                  "public_rooms": {
+                    "value": {
+                      "limit": 10,
+                      "offset": 0,
+                      "total": 1,
+                      "items": [
+                        {
+                          "_id": "65f1aa1de2b4c10012345679",
+                          "name": "APP_ID_65f1aa1de2b4c10012345679",
+                          "title": "General",
+                          "description": "General discussion",
+                          "type": "public",
+                          "picture": "",
+                          "appId": "APP_ID",
+                          "createdAt": "2026-01-01T12:00:00.000Z",
+                          "updatedAt": "2026-01-01T12:00:00.000Z"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "```\n  { error: 'Forbidden' }\n```"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "UserJwtAuth": []
+          }
+        ],
+        "operationId": "get_v1_chats_public"
+      }
+    },
+    "/v1/chats/users-access": {
+      "post": {
+        "summary": "add user to chat",
+        "description": "**Auth**: User JWT\n\nadd user to chat",
+        "tags": [
+          "Chats"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatName": {
+                    "type": "string"
+                  },
+                  "members": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "```\n  { error: 'Forbidden' }\n```"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "UserJwtAuth": []
+          }
+        ],
+        "operationId": "post_v1_chats_users_access"
+      },
+      "delete": {
+        "summary": "remove user from chat",
+        "description": "**Auth**: User JWT\n\nremove user from chat",
+        "tags": [
+          "Chats"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatName": {
+                    "type": "string"
+                  },
+                  "members": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "```\n  { error: 'Forbidden' }\n```"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "UserJwtAuth": []
+          }
+        ],
+        "operationId": "delete_v1_chats_users_access"
+      }
+    },
+    "/v1/chats/media/{chatName}": {
+      "post": {
+        "summary": "Post chat media",
+        "description": "**Auth**: User JWT\n\nPost chat media",
+        "tags": [
+          "Chats"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "chatName",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "```\n{\n  ok: boolean,\n}\n```"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "```\n  { error: 'Forbidden' }\n```"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "description": "```\n  { error: string }\n```"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "security": [
+          {
+            "UserJwtAuth": []
+          }
+        ],
+        "operationId": "post_v1_chats_media_chatname"
+      }
+    }
+  }
+}

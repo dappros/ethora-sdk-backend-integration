@@ -12,6 +12,13 @@
     "build": "tsc",
     "build:watch": "tsc --watch",
     "clean": "rm -rf dist",
+    "openapi:fetch": "node ./tools/openapi/fetch-openapi.mjs",
+    "openapi:validate": "swagger-cli validate ./openapi/swagger.json",
+    "openapi:generate:types": "openapi-typescript ./openapi/swagger.json -o ./generated/ethora-openapi.d.ts",
+    "openapi:generate:postman": "node ./tools/openapi/openapi-to-postman.mjs",
+    "openapi:generate": "npm run openapi:generate:types && npm run openapi:generate:postman",
+    "openapi:update": "npm run openapi:fetch && npm run openapi:validate && npm run openapi:generate",
+    "openapi:check": "npm run openapi:validate && npm run openapi:generate && git diff --exit-code",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -28,8 +35,12 @@
     "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
+    "@apidevtools/swagger-cli": "^4.0.4",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20.10.0",
+    "openapi-fetch": "^0.14.0",
+    "openapi-to-postmanv2": "^5.0.0",
+    "openapi-typescript": "^7.5.0",
     "typescript": "^5.3.3"
   },
   "peerDependencies": {
