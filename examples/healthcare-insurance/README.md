@@ -76,15 +76,15 @@ npx ts-node examples/healthcare-insurance/demo-backend.ts
 From repo root, in two shells:
 
 ```bash
-# Shell 1: backend (auto-loads examples/healthcare-insurance/.env if present)
+# Shell 1: backend (auto-loads examples/healthcare-insurance/.env.local if present)
 npx ts-node examples/healthcare-insurance/demo-backend.ts
 
 # Shell 2: frontend
 cd examples/healthcare-insurance/demo-frontend
 npm install
 # Copy sample if needed (frontend reads .env.local automatically):
-# cp ../env.local.sample .env
-# Then edit .env to point to backend URL.
+# cp ../env.local.sample .env.local
+# Then edit .env.local to point to backend URL.
 npm run dev  # open printed URL (default http://localhost:5173)
 ```
 

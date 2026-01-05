@@ -228,6 +228,57 @@ router.get("/users/:userId/chat-token", (req: Request, res: Response) => {
   }
 });
 
+// Get users
+router.get("/users", async (req: Request, res: Response) => {
+  try {
+    const { chatName, xmppUsername } = req.query;
+    const params: any = {};
+    if (chatName) params.chatName = String(chatName);
+    if (xmppUsername) params.xmppUsername = String(xmppUsername);
+
+    const response = await chatService.getUsers(
+      Object.keys(params).length > 0 ? params : undefined
+    );
+    res.json({ success: true, data: response });
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      res.status(error.response?.status || 500).json({
+        error: "Failed to get users",
+        details: error.response?.data,
+      });
+    } else {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+});
+
+// Update users (batch)
+router.patch("/users", async (req: Request, res: Response) => {
+  try {
+    const { users } = req.body;
+    if (!Array.isArray(users) || users.length === 0) {
+      return res.status(400).json({ error: "users must be a non-empty array" });
+    }
+    if (users.length > 100) {
+      return res
+        .status(400)
+        .json({ error: "Maximum 100 users allowed per request" });
+    }
+
+    const response = await chatService.updateUsers(users);
+    res.json({ success: true, data: response });
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      res.status(error.response?.status || 500).json({
+        error: "Failed to update users",
+        details: error.response?.data,
+      });
+    } else {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+});
+
 export default router;
 ```
 
@@ -489,6 +540,82 @@ async function cleanupWorkspaceChat(workspaceId: string, userIds: string[]) {
     return { success: true };
   } catch (error) {
     console.error("Failed to cleanup workspace chat:", error);
+    throw error;
+  }
+}
+```
+
+### Use Case 5: Getting Users
+
+Retrieve users from the chat service:
+
+```typescript
+async function getUsersExample() {
+  const chatService = getEthoraSDKService();
+
+  try {
+    // Get all users
+    const allUsers = await chatService.getUsers();
+    console.log(`Total users: ${allUsers.results?.length || 0}`);
+
+    // Get users by chat name (group chat)
+    const groupChatUsers = await chatService.getUsers({
+      chatName: "appId_workspaceId",
+    });
+
+    // Get users by chat name (1-on-1 chat)
+    const oneOnOneUsers = await chatService.getUsers({
+      chatName: "userA-userB",
+    });
+
+    return { allUsers, groupChatUsers, oneOnOneUsers };
+  } catch (error) {
+    console.error("Failed to get users:", error);
+    throw error;
+  }
+}
+```
+
+### Use Case 6: Updating Users (Batch)
+
+Update multiple users at once:
+
+```typescript
+async function updateUsersExample() {
+  const chatService = getEthoraSDKService();
+
+  try {
+    // Update multiple users (1-100 users per request)
+    const response = await chatService.updateUsers([
+      {
+        xmppUsername: "appId_user1",
+        firstName: "John",
+        lastName: "Doe",
+        username: "johndoe",
+        profileImage: "https://example.com/avatar1.jpg",
+      },
+      {
+        xmppUsername: "appId_user2",
+        firstName: "Jane",
+        lastName: "Smith",
+        username: "janesmith",
+      },
+    ]);
+
+    // Check results
+    response.results?.forEach((result: any) => {
+      if (result.status === "updated") {
+        console.log(`User ${result.xmppUsername} updated successfully`);
+      } else if (result.status === "not-found") {
+        console.warn(`User ${result.xmppUsername} not found`);
+      } else if (result.status === "skipped") {
+        console.log(`User ${result.xmppUsername} update skipped`);
+      }
+    });
+
+    return response;
+  } catch (error) {
+    console.error("Failed to update users:", error);
     throw error;
   }
 }

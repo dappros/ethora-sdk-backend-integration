@@ -191,6 +191,107 @@ Deletes a chat room by workspace ID.
 
 **Returns:** Promise resolving to the API response
 
+#### `getUsers(params?: GetUsersQueryParams): Promise<ApiResponse>`
+
+Gets users from the chat service. Supports multiple query modes.
+
+**Parameters:**
+
+- `params` (GetUsersQueryParams, optional): Query parameters for filtering users
+  - `chatName` (string, optional): Chat name to filter users
+    - For group chats: use `appId_uuId` format
+    - For 1-on-1 chats: use `xmppUsernameA-xmppUsernameB` format
+  - `xmppUsername` (string, optional): XMPP username to get a specific user
+
+**Returns:** Promise resolving to the API response with users array
+
+**Query Modes:**
+
+- **No parameters**: Returns all users of the app
+- **With `chatName`**: Returns all users of the specified chat
+- **With `xmppUsername`**: Returns a specific user by XMPP username (may not be supported by API yet)
+
+**Example:**
+
+```typescript
+// Get all users
+const allUsers = await chatRepo.getUsers();
+
+// Get users by chat name (group chat)
+const groupChatUsers = await chatRepo.getUsers({
+  chatName: "appId_workspaceId",
+});
+
+// Get users by chat name (1-on-1 chat)
+const oneOnOneUsers = await chatRepo.getUsers({
+  chatName: "userA-userB",
+});
+
+// Get specific user by XMPP username
+const user = await chatRepo.getUsers({
+  xmppUsername: "appId_userId",
+});
+```
+
+#### `updateUsers(users: UpdateUserData[]): Promise<ApiResponse>`
+
+Updates multiple users in the chat service using a PATCH request. Only provided fields will be updated.
+
+**Parameters:**
+
+- `users` (UpdateUserData[]): Array of user data to update (1-100 users)
+  - `xmppUsername` (string, required): XMPP username to identify the user
+  - `firstName` (string, optional): First name
+  - `lastName` (string, optional): Last name
+  - `username` (string, optional): Username
+  - `profileImage` (string, optional): Profile image URL
+
+**Returns:** Promise resolving to the API response with results array containing status for each user:
+- `updated`: User was successfully updated (includes updated user data)
+- `not-found`: User was not found
+- `skipped`: User update was skipped
+
+**Limits:** 1-100 users per request
+
+**Note:** The API only accepts `xmppUsername`, `firstName`, `lastName`, `username`, and `profileImage` fields. Other fields will be automatically filtered out.
+
+**Example:**
+
+```typescript
+// Update multiple users
+const response = await chatRepo.updateUsers([
+  {
+    xmppUsername: "appId_user1",
+    firstName: "John",
+    lastName: "Doe",
+    username: "johndoe",
+    profileImage: "https://example.com/avatar1.jpg",
+  },
+  {
+    xmppUsername: "appId_user2",
+    firstName: "Jane",
+    lastName: "Smith",
+    username: "janesmith",
+  },
+]);
+
+// Response structure:
+// {
+//   results: [
+//     {
+//       xmppUsername: "appId_user1",
+//       status: "updated",
+//       user: { /* updated user data */ }
+//     },
+//     {
+//       xmppUsername: "appId_user2",
+//       status: "updated",
+//       user: { /* updated user data */ }
+//     }
+//   ]
+// }
+```
+
 ## Complete Example
 
 ```typescript

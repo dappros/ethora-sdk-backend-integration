@@ -17,6 +17,9 @@ import type {
   CreateChatRoomRequest,
   DeleteChatRoomRequest,
   GrantAccessRequest,
+  UpdateUserData,
+  UpdateUsersRequest,
+  GetUsersQueryParams,
 } from "../types";
 import {
   getSecrets,
@@ -436,6 +439,99 @@ export class EthoraSDKService implements ChatRepository {
       // Re-throw if it's not a "not found" case
       throw error;
     }
+  }
+
+  /**
+   * Updates multiple users in the chat service
+   *
+   * This method sends a PATCH request to update multiple users at once.
+   * The endpoint accepts an array of user objects with userId and optional
+   * fields. Only provided fields will be updated.
+   *
+   * Limits: 1-100 users per request
+   * Response contains results array with status for each user:
+   * - updated: user was successfully updated (includes updated user data)
+   * - not-found: user was not found
+   * - skipped: user update was skipped
+   *
+   * @param users - Array of user data to update (1-100 users)
+   * @returns The API response with results array containing status for each user
+   */
+  async updateUsers(users: UpdateUserData[]): Promise<ApiResponse> {
+    // Validate user count limit
+    if (users.length === 0) {
+      throw new Error("At least 1 user is required for update");
+    }
+    if (users.length > 100) {
+      throw new Error("Maximum 100 users allowed per update request");
+    }
+
+    logger.info(`Attempting to update ${users.length} user(s)`);
+
+    const updateUrl = `${this.baseEthoraUrl}/v1/chats/users`;
+
+    // Remove userId from payload if present, as API doesn't accept it
+    // API expects xmppUsername or other identifier fields instead
+    const cleanedUsers = users.map((user) => {
+      const { userId, ...rest } = user;
+      return rest;
+    });
+
+    const payload: UpdateUsersRequest = {
+      users: cleanedUsers,
+    };
+
+    logger.debug(`Chat service API URL: ${updateUrl}`);
+    logger.debug(`Request payload: ${JSON.stringify(payload)}`);
+
+    return this.makeRequest<ApiResponse>({
+      method: "PATCH",
+      url: updateUrl,
+      data: payload,
+    });
+  }
+
+  /**
+   * Gets users from the chat service
+   *
+   * This method supports multiple query modes:
+   * - No parameters: returns all users of the app
+   * - chatName parameter: returns all users of the chat
+   *   - For group chats: use appId_uuId format
+   *   - For 1-on-1 chats: use xmppUsernameA-xmppUsernameB format
+   * - xmppUsername parameter: returns a specific user by XMPP username
+   *
+   * @param params - Query parameters for filtering users (optional)
+   * @returns The API response
+   */
+  async getUsers(params?: GetUsersQueryParams): Promise<ApiResponse> {
+    const getUrl = `${this.baseEthoraUrl}/v1/chats/users`;
+
+    // Build query parameters
+    const queryParams: string[] = [];
+    if (params?.chatName) {
+      queryParams.push(`chatName=${encodeURIComponent(params.chatName)}`);
+    }
+    if (params?.xmppUsername) {
+      queryParams.push(
+        `xmppUsername=${encodeURIComponent(params.xmppUsername)}`
+      );
+    }
+
+    const urlWithParams =
+      queryParams.length > 0 ? `${getUrl}?${queryParams.join("&")}` : getUrl;
+
+    logger.info(
+      params
+        ? `Getting users with params: ${JSON.stringify(params)}`
+        : "Getting all users of the app"
+    );
+    logger.debug(`Chat service API URL: ${urlWithParams}`);
+
+    return this.makeRequest<ApiResponse>({
+      method: "GET",
+      url: urlWithParams,
+    });
   }
 }
 
