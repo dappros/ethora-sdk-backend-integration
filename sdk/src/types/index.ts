@@ -121,9 +121,9 @@ export interface GetUsersQueryParams {
  */
 export interface ChatRepository {
   /**
-   * Creates a fully-qualified chat room JID from a workspace ID
+   * Creates a fully-qualified chat room JID from a chat ID
    */
-  createChatName(workspaceId: UUID, full?: boolean): string;
+  createChatName(chatId: UUID, full?: boolean): string;
 
   /**
    * Creates a client-side JWT token for a specific user ID
@@ -139,10 +139,10 @@ export interface ChatRepository {
   ): Promise<ApiResponse>;
 
   /**
-   * Creates a chat room for a workspace
+   * Creates a chat room
    */
   createChatRoom(
-    workspaceId: UUID,
+    chatId: UUID,
     roomData?: Record<string, unknown>
   ): Promise<ApiResponse>;
 
@@ -150,14 +150,25 @@ export interface ChatRepository {
    * Grants a user access to a chat room
    */
   grantUserAccessToChatRoom(
-    workspaceId: UUID,
+    chatId: UUID,
     userId: UUID | UUID[]
   ): Promise<ApiResponse>;
 
   /**
    * Grants chatbot access to a chat room
    */
-  grantChatbotAccessToChatRoom(workspaceId: UUID): Promise<ApiResponse>;
+  grantChatbotAccessToChatRoom(chatId: UUID): Promise<ApiResponse>;
+
+  /**
+   * Removes a user's access to a chat room
+   * 
+   * @param chatId - The unique identifier of the chat
+   * @param userId - The unique identifier of the user (or users)
+   */
+  removeUserAccessFromChatRoom(
+    chatId: UUID,
+    userId: UUID | UUID[]
+  ): Promise<ApiResponse>;
 
   /**
    * Deletes users from the chat service
@@ -165,9 +176,9 @@ export interface ChatRepository {
   deleteUsers(userIds: UUID[]): Promise<ApiResponse>;
 
   /**
-   * Deletes a chat room by workspace ID
+   * Deletes a chat room by chat ID
    */
-  deleteChatRoom(workspaceId: UUID): Promise<ApiResponse>;
+  deleteChatRoom(chatId: UUID): Promise<ApiResponse>;
 
   /**
    * Updates multiple users in the chat service

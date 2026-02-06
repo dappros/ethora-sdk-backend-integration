@@ -14,7 +14,7 @@ async function main() {
   // Get repository instance
   const chatRepo = getEthoraSDKService();
 
-  const workspaceId = "workspace-123";
+  const chatId = "workspace-123";
   const userIds = ["user-1", "user-2", "user-3"];
 
   try {
@@ -32,16 +32,16 @@ async function main() {
 
     // Step 2: Create chat room
     console.log("\nStep 2: Creating chat room...");
-    await chatRepo.createChatRoom(workspaceId, {
-      title: `Workspace ${workspaceId}`,
-      uuid: workspaceId,
+    await chatRepo.createChatRoom(chatId, {
+      title: `Workspace ${chatId}`,
+      uuid: chatId,
       type: "group",
     });
-    console.log(`✓ Chat room created for workspace ${workspaceId}`);
+    console.log(`✓ Chat room created for workspace ${chatId}`);
 
     // Step 3: Grant access to all users
     console.log("\nStep 3: Granting user access...");
-    await chatRepo.grantUserAccessToChatRoom(workspaceId, userIds);
+    await chatRepo.grantUserAccessToChatRoom(chatId, userIds);
     console.log(`✓ Access granted to all users`);
 
     // Step 4: Generate client tokens
@@ -53,7 +53,7 @@ async function main() {
     console.log("✓ Client tokens generated");
 
     // Step 5: Get room JID
-    const roomJid = chatRepo.createChatName(workspaceId, true);
+    const roomJid = chatRepo.createChatName(chatId, true);
     console.log(`\nRoom JID: ${roomJid}`);
 
     console.log("\n✅ Setup complete!");
