@@ -171,6 +171,31 @@ Grants chatbot access to a chat room. Requires `ETHORA_CHAT_BOT_JID` environment
 
 **Returns:** Promise resolving to the API response
 
+#### `removeUserAccessFromChatRoom(workspaceId: UUID, userId: UUID | UUID[]): Promise<ApiResponse>`
+
+Removes user(s) access from a chat room. Can accept a single userId or an array of userIds.
+
+**Parameters:**
+
+- `workspaceId` (UUID): The unique identifier of the workspace
+- `userId` (UUID | UUID[]): Single user ID or array of user IDs to remove
+
+**Returns:** Promise resolving to the API response
+
+**Example:**
+
+```typescript
+// Remove access for a single user
+await chatRepo.removeUserAccessFromChatRoom(workspaceId, "user-123");
+
+// Remove access for multiple users at once
+await chatRepo.removeUserAccessFromChatRoom(workspaceId, [
+  "user-1",
+  "user-2",
+  "user-3",
+]);
+```
+
 #### `deleteUsers(userIds: UUID[]): Promise<ApiResponse>`
 
 Deletes users from the chat service.
@@ -348,7 +373,23 @@ try {
 
 ## Notes
 
-- User IDs are used as-is without any prefixing (e.g., `"user-123"` stays `"user-123"`)
-- When granting access, user IDs are used as-is without prefixing
-- Chat room names follow the format: `{appId}_{workspaceId}` (only room names are prefixed, not user IDs)
-- Full JID format: `{appId}_{workspaceId}@conference.xmpp.ethoradev.com`
+### User ID and Chat Name Conventions
+
+- **User IDs**: User IDs are used **as-is** without prefixing when creating users (e.g., `"user-123"` stays `"user-123"`)
+- **Access Control**: When granting or revoking access to chat rooms, user IDs are automatically prefixed with `{appId}_` if they don't already have the prefix
+  - Example: `"user-123"` becomes `"appId_user-123"` when granting access
+  - If the user ID already starts with the app ID, no additional prefix is added
+- **Chat Room Names**: Follow the format `{appId}_{workspaceId}` (only room names are prefixed)
+- **Full JID Format**: `{appId}_{workspaceId}@conference.xmpp.ethoradev.com`
+
+### API Versioning
+
+The SDK uses different API versions for different operations:
+- **User Creation**: `/v2/users/batch`
+- **Chat Room Creation**: `/v2/chats`
+- **Access Control**: `/v2/chats/users-access`
+- **User Updates**: `/v2/chats/users`
+- **User Retrieval**: `/v2/chats/users`
+- **User Deletion**: `/v1/users/batch`
+- **Chat Room Deletion**: `/v1/chats`
+

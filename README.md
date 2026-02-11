@@ -217,6 +217,28 @@ router.post(
   },
 );
 
+// Remove user access from chat room
+router.delete(
+  '/workspaces/:workspaceId/chat/users/:userId',
+  async (req: Request, res: Response) => {
+    try {
+      const { workspaceId, userId } = req.params;
+
+      await chatService.removeUserAccessFromChatRoom(workspaceId, userId);
+      res.json({ success: true, message: 'Access removed' });
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        res.status(error.response?.status || 500).json({
+          error: 'Failed to remove access',
+          details: error.response?.data,
+        });
+      } else {
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    }
+  },
+);
+
 // Generate client JWT token
 router.get('/users/:userId/chat-token', (req: Request, res: Response) => {
   try {
@@ -516,7 +538,44 @@ async function addUserToWorkspace(workspaceId: string, userId: string) {
 }
 ```
 
-### Use Case 4: Cleanup on Workspace Deletion
+### Use Case 4: Removing User from Workspace
+
+When removing a user from a workspace:
+
+```typescript
+async function removeUserFromWorkspace(workspaceId: string, userId: string) {
+  const chatService = getEthoraSDKService();
+
+  try {
+    // Remove access from workspace chat room
+    await chatService.removeUserAccessFromChatRoom(workspaceId, userId);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to remove user from workspace:', error);
+    throw error;
+  }
+}
+
+// Remove multiple users at once
+async function removeMultipleUsersFromWorkspace(
+  workspaceId: string,
+  userIds: string[],
+) {
+  const chatService = getEthoraSDKService();
+
+  try {
+    await chatService.removeUserAccessFromChatRoom(workspaceId, userIds);
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to remove users from workspace:', error);
+    throw error;
+  }
+}
+```
+
+### Use Case 5: Cleanup on Workspace Deletion
+
 
 When deleting a workspace:
 
@@ -545,7 +604,7 @@ async function cleanupWorkspaceChat(workspaceId: string, userIds: string[]) {
 }
 ```
 
-### Use Case 5: Getting Users
+### Use Case 6: Getting Users
 
 Retrieve users from the chat service:
 
@@ -576,7 +635,7 @@ async function getUsersExample() {
 }
 ```
 
-### Use Case 6: Updating Users (Batch)
+### Use Case 7: Updating Users (Batch)
 
 Update multiple users at once:
 
@@ -621,7 +680,183 @@ async function updateUsersExample() {
 }
 ```
 
+## API Reference
+
+### Core Methods
+
+#### `createUser(userId: UUID, userData?: Record<string, unknown>): Promise<ApiResponse>`
+
+Creates a user in the chat service using the `/v2/users/batch` endpoint.
+
+**Parameters:**
+- `userId` (UUID): The unique identifier of the user
+- `userData` (optional): Additional user data
+  - `firstName` (string): User's first name
+  - `lastName` (string): User's last name (minimum 2 characters)
+  - `email` (string): User's email address
+  - `password` (string): User's password
+  - `displayName` (string): Display name (will be split into firstName/lastName if needed)
+
+**Returns:** Promise resolving to the API response
+
+**Note:** The API requires `lastName` to be at least 2 characters. If not provided or too short, defaults to "User".
+
+---
+
+#### `createChatRoom(chatId: UUID, roomData?: Record<string, unknown>): Promise<ApiResponse>`
+
+Creates a chat room using the `/v2/chats` endpoint.
+
+**Parameters:**
+- `chatId` (UUID): The unique identifier of the chat/workspace
+- `roomData` (optional): Room configuration
+  - `title` (string): Chat room title
+  - `uuid` (string): Room UUID (defaults to chatId)
+  - `type` (string): Room type (defaults to "group")
+
+**Returns:** Promise resolving to the API response
+
+---
+
+#### `grantUserAccessToChatRoom(chatId: UUID, userId: UUID | UUID[]): Promise<ApiResponse>`
+
+Grants user(s) access to a chat room using the `/v2/chats/users-access` endpoint.
+
+**Parameters:**
+- `chatId` (UUID): The unique identifier of the chat/workspace
+- `userId` (UUID | UUID[]): Single user ID or array of user IDs
+
+**Returns:** Promise resolving to the API response
+
+**Note:** User IDs are automatically prefixed with `{appId}_` if they don't already have the prefix.
+
+---
+
+#### `removeUserAccessFromChatRoom(chatId: UUID, userId: UUID | UUID[]): Promise<ApiResponse>`
+
+Removes user(s) access from a chat room using the `/v2/chats/users-access` DELETE endpoint.
+
+**Parameters:**
+- `chatId` (UUID): The unique identifier of the chat/workspace
+- `userId` (UUID | UUID[]): Single user ID or array of user IDs to remove
+
+**Returns:** Promise resolving to the API response
+
+**Note:** User IDs are automatically prefixed with `{appId}_` if they don't already have the prefix.
+
+---
+
+#### `grantChatbotAccessToChatRoom(chatId: UUID): Promise<ApiResponse>`
+
+Grants chatbot access to a chat room.
+
+**Parameters:**
+- `chatId` (UUID): The unique identifier of the chat/workspace
+
+**Returns:** Promise resolving to the API response
+
+**Requires:** `ETHORA_CHAT_BOT_JID` environment variable to be set
+
+---
+
+#### `getUsers(params?: GetUsersQueryParams): Promise<ApiResponse>`
+
+Retrieves users from the chat service using the `/v2/chats/users` endpoint.
+
+**Parameters:**
+- `params` (GetUsersQueryParams, optional): Query parameters
+  - `chatName` (string): Filter by chat name
+    - Group chats: `appId_chatId` format
+    - 1-on-1 chats: `xmppUsernameA-xmppUsernameB` format
+  - `xmppUsername` (string): Filter by specific XMPP username
+
+**Query Modes:**
+- No parameters: Returns all users of the app
+- With `chatName`: Returns all users of the specified chat
+- With `xmppUsername`: Returns a specific user
+
+**Returns:** Promise resolving to the API response with users array
+
+---
+
+#### `updateUsers(users: UpdateUserData[]): Promise<ApiResponse>`
+
+Updates multiple users at once using the `/v2/chats/users` PATCH endpoint.
+
+**Parameters:**
+- `users` (UpdateUserData[]): Array of user data to update (1-100 users)
+  - `xmppUsername` (string, required): XMPP username to identify the user
+  - `firstName` (string, optional): First name
+  - `lastName` (string, optional): Last name
+  - `username` (string, optional): Username
+  - `profileImage` (string, optional): Profile image URL
+
+**Returns:** Promise resolving to the API response with results array
+
+**Response Status Values:**
+- `updated`: User was successfully updated (includes updated user data)
+- `not-found`: User was not found
+- `skipped`: User update was skipped
+
+**Limits:** 1-100 users per request
+
+---
+
+#### `deleteUsers(userIds: UUID[]): Promise<ApiResponse>`
+
+Deletes users from the chat service using the `/v1/users/batch` endpoint.
+
+**Parameters:**
+- `userIds` (UUID[]): Array of user IDs to delete
+
+**Returns:** Promise resolving to the API response
+
+**Note:** Gracefully handles non-existent users (422 status with "not found").
+
+---
+
+#### `deleteChatRoom(chatId: UUID): Promise<ApiResponse>`
+
+Deletes a chat room using the `/v1/chats` endpoint.
+
+**Parameters:**
+- `chatId` (UUID): The unique identifier of the chat/workspace
+
+**Returns:** Promise resolving to the API response
+
+**Note:** Gracefully handles non-existent rooms (422 status with "not found").
+
+---
+
+### Helper Methods
+
+#### `createChatName(chatId: UUID, full?: boolean): string`
+
+Generates a chat room JID from a chat ID.
+
+**Parameters:**
+- `chatId` (UUID): The unique identifier of the chat
+- `full` (boolean, optional): Whether to include the full JID domain (default: true)
+
+**Returns:** The JID string
+- Full: `{appId}_{chatId}@conference.xmpp.ethoradev.com`
+- Short: `{appId}_{chatId}`
+
+---
+
+#### `createChatUserJwtToken(userId: UUID): string`
+
+Creates a client-side JWT token for user authentication.
+
+**Parameters:**
+- `userId` (UUID): The unique identifier of the user
+
+**Returns:** The encoded JWT token for client-side authentication
+
+---
+
 ## Error Handling
+
 
 ### Handling API Errors
 
