@@ -79,7 +79,7 @@ npm install dotenv
 In your main application file (e.g., `app.js`, `server.js`, or `index.ts`):
 
 ```typescript
-import dotenv from "dotenv";
+import dotenv from 'dotenv';
 
 // Load environment variables
 dotenv.config();
@@ -90,7 +90,7 @@ dotenv.config();
 ### Step 1: Import the SDK
 
 ```typescript
-import { getEthoraSDKService } from "@ethora/sdk-backend";
+import { getEthoraSDKService } from '@ethora/sdk-backend';
 ```
 
 ### Step 2: Initialize the Service
@@ -101,7 +101,7 @@ You can initialize the service in several ways:
 
 ```typescript
 // services/chatService.ts
-import { getEthoraSDKService } from "@ethora/sdk-backend";
+import { getEthoraSDKService } from '@ethora/sdk-backend';
 
 // Get the singleton instance
 const chatService = getEthoraSDKService();
@@ -113,7 +113,7 @@ export default chatService;
 
 ```typescript
 // In your route handler or service
-import { getEthoraSDKService } from "@ethora/sdk-backend";
+import { getEthoraSDKService } from '@ethora/sdk-backend';
 
 const chatService = getEthoraSDKService();
 ```
@@ -122,8 +122,8 @@ const chatService = getEthoraSDKService();
 
 ```typescript
 // chat.service.ts
-import { Injectable } from "@nestjs/common";
-import { getEthoraSDKService } from "@ethora/sdk-backend";
+import { Injectable } from '@nestjs/common';
+import { getEthoraSDKService } from '@ethora/sdk-backend';
 
 @Injectable()
 export class ChatService {
@@ -139,16 +139,16 @@ export class ChatService {
 
 ```typescript
 // routes/chat.ts
-import express, { Request, Response } from "express";
-import { getEthoraSDKService } from "@ethora/sdk-backend";
-import axios from "axios";
+import express, { Request, Response } from 'express';
+import { getEthoraSDKService } from '@ethora/sdk-backend';
+import axios from 'axios';
 
 const router = express.Router();
 const chatService = getEthoraSDKService();
 
 // Create a chat room for a workspace
 router.post(
-  "/workspaces/:workspaceId/chat",
+  '/workspaces/:workspaceId/chat',
   async (req: Request, res: Response) => {
     try {
       const { workspaceId } = req.params;
@@ -157,7 +157,7 @@ router.post(
       const response = await chatService.createChatRoom(workspaceId, {
         title: roomData.title || `Chat Room ${workspaceId}`,
         uuid: workspaceId,
-        type: roomData.type || "group",
+        type: roomData.type || 'group',
         ...roomData,
       });
 
@@ -165,18 +165,18 @@ router.post(
     } catch (error) {
       if (axios.isAxiosError(error)) {
         res.status(error.response?.status || 500).json({
-          error: "Failed to create chat room",
+          error: 'Failed to create chat room',
           details: error.response?.data,
         });
       } else {
-        res.status(500).json({ error: "Internal server error" });
+        res.status(500).json({ error: 'Internal server error' });
       }
     }
-  }
+  },
 );
 
 // Create a user
-router.post("/users/:userId", async (req: Request, res: Response) => {
+router.post('/users/:userId', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const userData = req.body;
@@ -186,50 +186,50 @@ router.post("/users/:userId", async (req: Request, res: Response) => {
   } catch (error) {
     if (axios.isAxiosError(error)) {
       res.status(error.response?.status || 500).json({
-        error: "Failed to create user",
+        error: 'Failed to create user',
         details: error.response?.data,
       });
     } else {
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: 'Internal server error' });
     }
   }
 });
 
 // Grant user access to chat room
 router.post(
-  "/workspaces/:workspaceId/chat/users/:userId",
+  '/workspaces/:workspaceId/chat/users/:userId',
   async (req: Request, res: Response) => {
     try {
       const { workspaceId, userId } = req.params;
 
       await chatService.grantUserAccessToChatRoom(workspaceId, userId);
-      res.json({ success: true, message: "Access granted" });
+      res.json({ success: true, message: 'Access granted' });
     } catch (error) {
       if (axios.isAxiosError(error)) {
         res.status(error.response?.status || 500).json({
-          error: "Failed to grant access",
+          error: 'Failed to grant access',
           details: error.response?.data,
         });
       } else {
-        res.status(500).json({ error: "Internal server error" });
+        res.status(500).json({ error: 'Internal server error' });
       }
     }
-  }
+  },
 );
 
 // Generate client JWT token
-router.get("/users/:userId/chat-token", (req: Request, res: Response) => {
+router.get('/users/:userId/chat-token', (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const token = chatService.createChatUserJwtToken(userId);
     res.json({ token });
   } catch (error) {
-    res.status(500).json({ error: "Failed to generate token" });
+    res.status(500).json({ error: 'Failed to generate token' });
   }
 });
 
 // Get users
-router.get("/users", async (req: Request, res: Response) => {
+router.get('/users', async (req: Request, res: Response) => {
   try {
     const { chatName, xmppUsername } = req.query;
     const params: any = {};
@@ -237,32 +237,32 @@ router.get("/users", async (req: Request, res: Response) => {
     if (xmppUsername) params.xmppUsername = String(xmppUsername);
 
     const response = await chatService.getUsers(
-      Object.keys(params).length > 0 ? params : undefined
+      Object.keys(params).length > 0 ? params : undefined,
     );
     res.json({ success: true, data: response });
   } catch (error) {
     if (axios.isAxiosError(error)) {
       res.status(error.response?.status || 500).json({
-        error: "Failed to get users",
+        error: 'Failed to get users',
         details: error.response?.data,
       });
     } else {
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: 'Internal server error' });
     }
   }
 });
 
 // Update users (batch)
-router.patch("/users", async (req: Request, res: Response) => {
+router.patch('/users', async (req: Request, res: Response) => {
   try {
     const { users } = req.body;
     if (!Array.isArray(users) || users.length === 0) {
-      return res.status(400).json({ error: "users must be a non-empty array" });
+      return res.status(400).json({ error: 'users must be a non-empty array' });
     }
     if (users.length > 100) {
       return res
         .status(400)
-        .json({ error: "Maximum 100 users allowed per request" });
+        .json({ error: 'Maximum 100 users allowed per request' });
     }
 
     const response = await chatService.updateUsers(users);
@@ -270,11 +270,11 @@ router.patch("/users", async (req: Request, res: Response) => {
   } catch (error) {
     if (axios.isAxiosError(error)) {
       res.status(error.response?.status || 500).json({
-        error: "Failed to update users",
+        error: 'Failed to update users',
         details: error.response?.data,
       });
     } else {
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: 'Internal server error' });
     }
   }
 });
@@ -286,9 +286,9 @@ export default router;
 
 ```typescript
 // chat/chat.service.ts
-import { Injectable, HttpException, HttpStatus } from "@nestjs/common";
-import { getEthoraSDKService } from "@ethora/sdk-backend";
-import axios from "axios";
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { getEthoraSDKService } from '@ethora/sdk-backend';
+import axios from 'axios';
 
 @Injectable()
 export class ChatService {
@@ -301,10 +301,10 @@ export class ChatService {
       if (axios.isAxiosError(error)) {
         throw new HttpException(
           {
-            message: "Failed to create chat room",
+            message: 'Failed to create chat room',
             details: error.response?.data,
           },
-          error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+          error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
         );
       }
       throw error;
@@ -318,10 +318,10 @@ export class ChatService {
       if (axios.isAxiosError(error)) {
         throw new HttpException(
           {
-            message: "Failed to create user",
+            message: 'Failed to create user',
             details: error.response?.data,
           },
-          error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+          error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
         );
       }
       throw error;
@@ -334,28 +334,28 @@ export class ChatService {
 }
 
 // chat/chat.controller.ts
-import { Controller, Post, Get, Param, Body } from "@nestjs/common";
-import { ChatService } from "./chat.service";
+import { Controller, Post, Get, Param, Body } from '@nestjs/common';
+import { ChatService } from './chat.service';
 
-@Controller("chat")
+@Controller('chat')
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
-  @Post("workspaces/:workspaceId/rooms")
+  @Post('workspaces/:workspaceId/rooms')
   async createChatRoom(
-    @Param("workspaceId") workspaceId: string,
-    @Body() roomData: any
+    @Param('workspaceId') workspaceId: string,
+    @Body() roomData: any,
   ) {
     return this.chatService.createChatRoom(workspaceId, roomData);
   }
 
-  @Post("users/:userId")
-  async createUser(@Param("userId") userId: string, @Body() userData: any) {
+  @Post('users/:userId')
+  async createUser(@Param('userId') userId: string, @Body() userData: any) {
     return this.chatService.createUser(userId, userData);
   }
 
-  @Get("users/:userId/token")
-  getClientToken(@Param("userId") userId: string) {
+  @Get('users/:userId/token')
+  getClientToken(@Param('userId') userId: string) {
     return { token: this.chatService.generateClientToken(userId) };
   }
 }
@@ -365,15 +365,15 @@ export class ChatController {
 
 ```typescript
 // routes/chat.ts
-import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { getEthoraSDKService } from "@ethora/sdk-backend";
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { getEthoraSDKService } from '@ethora/sdk-backend';
 
 const chatService = getEthoraSDKService();
 
 export async function chatRoutes(fastify: FastifyInstance) {
   // Create chat room
   fastify.post(
-    "/workspaces/:workspaceId/chat",
+    '/workspaces/:workspaceId/chat',
     async (request: FastifyRequest, reply: FastifyReply) => {
       const { workspaceId } = request.params as { workspaceId: string };
       const roomData = request.body as any;
@@ -381,23 +381,23 @@ export async function chatRoutes(fastify: FastifyInstance) {
       try {
         const response = await chatService.createChatRoom(
           workspaceId,
-          roomData
+          roomData,
         );
         return { success: true, data: response };
       } catch (error) {
-        reply.code(500).send({ error: "Failed to create chat room" });
+        reply.code(500).send({ error: 'Failed to create chat room' });
       }
-    }
+    },
   );
 
   // Generate client token
   fastify.get(
-    "/users/:userId/chat-token",
+    '/users/:userId/chat-token',
     async (request: FastifyRequest, reply: FastifyReply) => {
       const { userId } = request.params as { userId: string };
       const token = chatService.createChatUserJwtToken(userId);
       return { token };
-    }
+    },
   );
 }
 ```
@@ -412,7 +412,7 @@ When creating a new workspace, set up the chat room and initial users:
 async function setupWorkspaceChat(
   workspaceId: string,
   userIds: string[],
-  adminUserId: string
+  adminUserId: string,
 ) {
   const chatService = getEthoraSDKService();
 
@@ -421,15 +421,15 @@ async function setupWorkspaceChat(
     await chatService.createChatRoom(workspaceId, {
       title: `Workspace ${workspaceId}`,
       uuid: workspaceId,
-      type: "group",
+      type: 'group',
     });
 
     // 2. Create users (if they don't exist)
     for (const userId of userIds) {
       try {
         await chatService.createUser(userId, {
-          firstName: "User",
-          lastName: "Name",
+          firstName: 'User',
+          lastName: 'Name',
         });
       } catch (error) {
         // User might already exist, continue
@@ -444,12 +444,12 @@ async function setupWorkspaceChat(
     try {
       await chatService.grantChatbotAccessToChatRoom(workspaceId);
     } catch (error) {
-      console.warn("Chatbot access not configured or failed");
+      console.warn('Chatbot access not configured or failed');
     }
 
     return { success: true };
   } catch (error) {
-    console.error("Failed to setup workspace chat:", error);
+    console.error('Failed to setup workspace chat:', error);
     throw error;
   }
 }
@@ -462,7 +462,7 @@ When a new user joins your platform:
 ```typescript
 async function onboardNewUser(
   userId: string,
-  userData: { firstName: string; lastName: string; email: string }
+  userData: { firstName: string; lastName: string; email: string },
 ) {
   const chatService = getEthoraSDKService();
 
@@ -483,7 +483,7 @@ async function onboardNewUser(
       chatToken: clientToken,
     };
   } catch (error) {
-    console.error("Failed to onboard user:", error);
+    console.error('Failed to onboard user:', error);
     throw error;
   }
 }
@@ -510,7 +510,7 @@ async function addUserToWorkspace(workspaceId: string, userId: string) {
 
     return { success: true };
   } catch (error) {
-    console.error("Failed to add user to workspace:", error);
+    console.error('Failed to add user to workspace:', error);
     throw error;
   }
 }
@@ -533,13 +533,13 @@ async function cleanupWorkspaceChat(workspaceId: string, userIds: string[]) {
       try {
         await chatService.deleteUsers(userIds);
       } catch (error) {
-        console.warn("Some users might not exist:", error);
+        console.warn('Some users might not exist:', error);
       }
     }
 
     return { success: true };
   } catch (error) {
-    console.error("Failed to cleanup workspace chat:", error);
+    console.error('Failed to cleanup workspace chat:', error);
     throw error;
   }
 }
@@ -560,17 +560,17 @@ async function getUsersExample() {
 
     // Get users by chat name (group chat)
     const groupChatUsers = await chatService.getUsers({
-      chatName: "appId_workspaceId",
+      chatName: 'appId_workspaceId',
     });
 
     // Get users by chat name (1-on-1 chat)
     const oneOnOneUsers = await chatService.getUsers({
-      chatName: "userA-userB",
+      chatName: 'userA-userB',
     });
 
     return { allUsers, groupChatUsers, oneOnOneUsers };
   } catch (error) {
-    console.error("Failed to get users:", error);
+    console.error('Failed to get users:', error);
     throw error;
   }
 }
@@ -588,34 +588,34 @@ async function updateUsersExample() {
     // Update multiple users (1-100 users per request)
     const response = await chatService.updateUsers([
       {
-        xmppUsername: "appId_user1",
-        firstName: "John",
-        lastName: "Doe",
-        username: "johndoe",
-        profileImage: "https://example.com/avatar1.jpg",
+        xmppUsername: 'appId_user1',
+        firstName: 'John',
+        lastName: 'Doe',
+        username: 'johndoe',
+        profileImage: 'https://example.com/avatar1.jpg',
       },
       {
-        xmppUsername: "appId_user2",
-        firstName: "Jane",
-        lastName: "Smith",
-        username: "janesmith",
+        xmppUsername: 'appId_user2',
+        firstName: 'Jane',
+        lastName: 'Smith',
+        username: 'janesmith',
       },
     ]);
 
     // Check results
     response.results?.forEach((result: any) => {
-      if (result.status === "updated") {
+      if (result.status === 'updated') {
         console.log(`User ${result.xmppUsername} updated successfully`);
-      } else if (result.status === "not-found") {
+      } else if (result.status === 'not-found') {
         console.warn(`User ${result.xmppUsername} not found`);
-      } else if (result.status === "skipped") {
+      } else if (result.status === 'skipped') {
         console.log(`User ${result.xmppUsername} update skipped`);
       }
     });
 
     return response;
   } catch (error) {
-    console.error("Failed to update users:", error);
+    console.error('Failed to update users:', error);
     throw error;
   }
 }
@@ -628,8 +628,8 @@ async function updateUsersExample() {
 The SDK uses Axios for HTTP requests, so errors are AxiosError instances:
 
 ```typescript
-import axios from "axios";
-import { getEthoraSDKService } from "@ethora/sdk-backend";
+import axios from 'axios';
+import { getEthoraSDKService } from '@ethora/sdk-backend';
 
 const chatService = getEthoraSDKService();
 
@@ -644,20 +644,20 @@ async function createChatRoomSafely(workspaceId: string) {
       // Handle specific error cases
       if (status === 422) {
         // Validation error
-        console.error("Validation error:", errorData);
+        console.error('Validation error:', errorData);
       } else if (status === 401) {
         // Authentication error
-        console.error("Authentication failed - check your credentials");
+        console.error('Authentication failed - check your credentials');
       } else if (status === 404) {
         // Resource not found
-        console.error("Resource not found");
+        console.error('Resource not found');
       } else {
         // Other HTTP errors
         console.error(`HTTP error ${status}:`, errorData);
       }
     } else {
       // Non-HTTP errors
-      console.error("Unexpected error:", error);
+      console.error('Unexpected error:', error);
     }
     throw error;
   }
@@ -678,17 +678,17 @@ async function ensureChatRoomExists(workspaceId: string) {
     if (axios.isAxiosError(error)) {
       const errorData = error.response?.data;
       const errorMessage =
-        typeof errorData === "object" && errorData !== null
-          ? (errorData as { error?: string }).error || ""
-          : String(errorData || "");
+        typeof errorData === 'object' && errorData !== null
+          ? (errorData as { error?: string }).error || ''
+          : String(errorData || '');
 
       // If room already exists, that's okay
       if (
         error.response?.status === 422 &&
-        (errorMessage.includes("already exist") ||
-          errorMessage.includes("already exists"))
+        (errorMessage.includes('already exist') ||
+          errorMessage.includes('already exists'))
       ) {
-        console.log("Chat room already exists, continuing...");
+        console.log('Chat room already exists, continuing...');
         return; // Success - room exists
       }
     }
@@ -719,8 +719,8 @@ Create a service wrapper in your application:
 
 ```typescript
 // services/chatService.ts
-import { getEthoraSDKService } from "@ethora/sdk-backend";
-import type { ChatRepository } from "@ethora/sdk-backend";
+import { getEthoraSDKService } from '@ethora/sdk-backend';
+import type { ChatRepository } from '@ethora/sdk-backend';
 
 class ChatServiceWrapper {
   private service: ChatRepository;
@@ -752,16 +752,16 @@ Validate environment variables on application startup:
 // config/validateEnv.ts
 function validateEthoraConfig() {
   const required = [
-    "ETHORA_CHAT_API_URL",
-    "ETHORA_CHAT_APP_ID",
-    "ETHORA_CHAT_APP_SECRET",
+    'ETHORA_CHAT_API_URL',
+    'ETHORA_CHAT_APP_ID',
+    'ETHORA_CHAT_APP_SECRET',
   ];
 
   const missing = required.filter((key) => !process.env[key]);
 
   if (missing.length > 0) {
     throw new Error(
-      `Missing required Ethora environment variables: ${missing.join(", ")}`
+      `Missing required Ethora environment variables: ${missing.join(', ')}`,
     );
   }
 }
@@ -775,8 +775,8 @@ validateEthoraConfig();
 Integrate with your existing logging system:
 
 ```typescript
-import { getEthoraSDKService } from "@ethora/sdk-backend";
-import { logger } from "./utils/logger"; // Your logger
+import { getEthoraSDKService } from '@ethora/sdk-backend';
+import { logger } from './utils/logger'; // Your logger
 
 const chatService = getEthoraSDKService();
 
@@ -798,7 +798,7 @@ async function createChatRoomWithLogging(workspaceId: string) {
 Use TypeScript types from the SDK:
 
 ```typescript
-import type { UUID, ApiResponse } from "@ethora/sdk-backend";
+import type { UUID, ApiResponse } from '@ethora/sdk-backend';
 
 async function createUserTyped(
   userId: UUID,
@@ -806,7 +806,7 @@ async function createUserTyped(
     firstName: string;
     lastName: string;
     email: string;
-  }
+  },
 ): Promise<ApiResponse> {
   const chatService = getEthoraSDKService();
   return await chatService.createUser(userId, userData);
@@ -839,7 +839,7 @@ try {
 } catch (error) {
   if (axios.isAxiosError(error) && error.response?.status === 422) {
     // User already exists, continue
-    console.log("User already exists");
+    console.log('User already exists');
   } else {
     throw error;
   }
@@ -887,3 +887,6 @@ Apache 2.0
 ## Support
 
 For issues and questions, please open an issue on the GitHub repository.
+
+To run tests with logs run from root:
+TEST_LOG_FILE=logs/chat-repo.log npm test

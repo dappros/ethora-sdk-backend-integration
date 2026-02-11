@@ -8,8 +8,8 @@
  * @format
  */
 
-import { randomUUID } from "crypto";
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from "axios";
+import { randomUUID } from 'crypto';
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
 import type {
   UUID,
   ChatRepository,
@@ -20,16 +20,16 @@ import type {
   UpdateUserData,
   UpdateUsersRequest,
   GetUsersQueryParams,
-} from "../types";
+} from '../types';
 import {
   getSecrets,
   DEFAULT_TIMEOUT,
   ETHORA_JID_DOMAIN,
-} from "../config/secrets";
-import { createServerToken, createClientToken } from "../utils/jwt";
-import { getLogger } from "../utils/logger";
+} from '../config/secrets';
+import { createServerToken, createClientToken } from '../utils/jwt';
+import { getLogger } from '../utils/logger';
 
-const logger = getLogger("EthoraSDKService");
+const logger = getLogger('EthoraSDKService');
 
 /**
  * EthoraSDKService - Concrete implementation of ChatRepository
@@ -46,31 +46,29 @@ export class EthoraSDKService implements ChatRepository {
     this.httpClient = axios.create({
       timeout: DEFAULT_TIMEOUT.total,
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     });
 
-    logger.debug("EthoraSDKService instance initialized");
+    logger.debug('EthoraSDKService instance initialized');
   }
 
   /**
-   * Generates a fully-qualified chat room JID from a workspace ID
+   * Generates a fully-qualified chat room JID from a chat ID
    *
-   * The JID is constructed in the format `<appId>_<workspace_id>@conference.xmpp.ethoradev.com`.
+   * The JID is constructed in the format `<appId>_<chat_id>@conference.xmpp.ethoradev.com`.
    * This method uses a static JID domain to provide a unique identifier for a chat room.
    *
-   * @param workspaceId - The unique identifier of the workspace
+   * @param chatId - The unique identifier of the chat
    * @param full - Whether to include the full JID domain
    * @returns The fully-qualified JID string for the chat room
    */
-  createChatName(workspaceId: UUID, full: boolean = true): string {
-    logger.debug(
-      `Creating chat room name (JID) for workspace ID: ${workspaceId}`
-    );
+  createChatName(chatId: UUID, full: boolean = true): string {
+    logger.debug(`Creating chat room name (JID) for chat ID: ${chatId}`);
 
     const chatName = full
-      ? `${this.secrets.chatAppId}_${workspaceId}${ETHORA_JID_DOMAIN}`
-      : `${this.secrets.chatAppId}_${workspaceId}`;
+      ? `${this.secrets.chatAppId}_${chatId}${ETHORA_JID_DOMAIN}`
+      : `${this.secrets.chatAppId}_${chatId}`;
 
     logger.info(`Chat room name created: '${chatName}'`);
     return chatName;
@@ -97,9 +95,9 @@ export class EthoraSDKService implements ChatRepository {
    * @returns The headers dictionary containing the `x-custom-token` field
    */
   private getHeaders(): Record<string, string> {
-    logger.debug("Retrieving headers for a server-to-server API call");
+    logger.debug('Retrieving headers for a server-to-server API call');
     return {
-      "x-custom-token": createServerToken(),
+      'x-custom-token': createServerToken(),
     };
   }
 
@@ -110,7 +108,7 @@ export class EthoraSDKService implements ChatRepository {
    * @returns The API response
    */
   private async makeRequest<T = ApiResponse>(
-    config: AxiosRequestConfig
+    config: AxiosRequestConfig,
   ): Promise<T> {
     try {
       const response = await this.httpClient.request<T>({
@@ -128,11 +126,11 @@ export class EthoraSDKService implements ChatRepository {
         logger.error(
           `API call failed with status code: ${axiosError.response?.status}. ` +
             `Response: ${axiosError.response?.data}`,
-          error
+          error,
         );
         throw error;
       }
-      logger.error("An unexpected error occurred during API call", error);
+      logger.error('An unexpected error occurred during API call', error);
       throw error;
     }
   }
@@ -150,10 +148,10 @@ export class EthoraSDKService implements ChatRepository {
    */
   async createUser(
     userId: UUID,
-    userData?: Record<string, unknown>
+    userData?: Record<string, unknown>,
   ): Promise<ApiResponse> {
     logger.info(`Attempting to create user with ID: ${userId}`);
-    const createUrl = `${this.baseEthoraUrl}/v1/users/batch`;
+    const createUrl = `${this.baseEthoraUrl}/v2/users/batch`;
 
     // Extract user fields from userData or use defaults
     // Generate unique email using UUID if not provided
@@ -167,21 +165,21 @@ export class EthoraSDKService implements ChatRepository {
 
     if (userData?.firstName) {
       firstName = userData.firstName as string;
-      lastName = (userData?.lastName as string) || "";
+      lastName = (userData?.lastName as string) || '';
     } else if (userData?.displayName) {
       const displayName = userData.displayName as string;
       const nameParts = displayName.trim().split(/\s+/);
-      firstName = nameParts[0] || "User";
-      lastName = nameParts.slice(1).join(" ") || "";
+      firstName = nameParts[0] || 'User';
+      lastName = nameParts.slice(1).join(' ') || '';
     } else {
-      firstName = "User";
-      lastName = "";
+      firstName = 'User';
+      lastName = '';
     }
 
     // Ensure lastName meets API requirements: at least 2 characters, not empty
     if (!lastName || lastName.length < 2) {
       // Use a default lastName if empty or too short
-      lastName = "User";
+      lastName = 'User';
     }
 
     // Use plain userId without prefixing
@@ -201,15 +199,15 @@ export class EthoraSDKService implements ChatRepository {
               Object.entries(userData).filter(
                 ([key]) =>
                   ![
-                    "email",
-                    "firstName",
-                    "lastName",
-                    "password",
-                    "uuid",
-                    "displayName",
-                    "role", // Role is not allowed in user creation payload
-                  ].includes(key)
-              )
+                    'email',
+                    'firstName',
+                    'lastName',
+                    'password',
+                    'uuid',
+                    'displayName',
+                    'role',
+                  ].includes(key),
+              ),
             )),
         },
       ],
@@ -219,33 +217,31 @@ export class EthoraSDKService implements ChatRepository {
     logger.debug(`Request payload: ${JSON.stringify(payload)}`);
 
     return this.makeRequest<ApiResponse>({
-      method: "POST",
+      method: 'POST',
       url: createUrl,
       data: payload,
     });
   }
 
   /**
-   * Creates a chat room for a workspace
+   * Creates a chat room
    *
-   * @param workspaceId - The unique identifier of the workspace
+   * @param chatId - The unique identifier of the chat
    * @param roomData - Additional room data (optional)
    * @returns The API response
    */
   async createChatRoom(
-    workspaceId: UUID,
-    roomData?: Record<string, unknown>
+    chatId: UUID,
+    roomData?: Record<string, unknown>,
   ): Promise<ApiResponse> {
-    logger.info(
-      `Attempting to create chat room for workspace ID: ${workspaceId}`
-    );
-    const createUrl = `${this.baseEthoraUrl}/v1/chats`;
+    logger.info(`Attempting to create chat room with ID: ${chatId}`);
+    const createUrl = `${this.baseEthoraUrl}/v2/chats`;
 
     // Create chat room - API expects title, uuid, and type
     const payload: CreateChatRoomRequest = {
-      title: (roomData?.title as string) || `Chat Room ${workspaceId}`,
-      uuid: String(workspaceId),
-      type: (roomData?.type as string) || "group",
+      title: (roomData?.title as string) || `Chat Room ${chatId}`,
+      uuid: String(chatId), // Use chatId as uuid
+      type: (roomData?.type as string) || 'group',
       ...roomData, // Allow roomData to override fields if provided
     };
 
@@ -253,7 +249,7 @@ export class EthoraSDKService implements ChatRepository {
     logger.debug(`Request payload: ${JSON.stringify(payload)}`);
 
     return this.makeRequest<ApiResponse>({
-      method: "POST",
+      method: 'POST',
       url: createUrl,
       data: payload,
     });
@@ -262,29 +258,38 @@ export class EthoraSDKService implements ChatRepository {
   /**
    * Grants a user access to a chat room
    *
-   * Uses plain userIds without prefixing (matching how users are created)
-   *
-   * @param workspaceId - The unique identifier of the workspace
+   * @param chatId - The unique identifier of the chat
    * @param userId - The unique identifier of the user (or array of user IDs)
    * @returns The API response
    */
   async grantUserAccessToChatRoom(
-    workspaceId: UUID,
-    userId: UUID | UUID[]
+    chatId: UUID,
+    userId: UUID | UUID[],
   ): Promise<ApiResponse> {
-    logger.info(
-      `Granting user(s) access to chat room for workspace ${workspaceId}`
-    );
+    logger.info(`Granting user(s) access to chat room ${chatId}`);
 
-    const chatName = this.createChatName(workspaceId, false);
-    // Use /v1/chats/users-access endpoint with chatName and members array
-    const grantUrl = `${this.baseEthoraUrl}/v1/chats/users-access`;
+    const chatName = this.createChatName(chatId, false);
+    // Use /v2/chats/users-access endpoint with chatName and members array
+    const grantUrl = `${this.baseEthoraUrl}/v2/chats/users-access`;
 
     // Convert single userId to array if needed
-    // Use plain userIds without prefixing
+    // API requires usernames to start with appId, so prefix them
     const members = Array.isArray(userId)
-      ? userId.map((id) => String(id))
-      : [String(userId)];
+      ? userId.map((id) => {
+          const userIdStr = String(id);
+          // If userId doesn't start with appId, prefix it
+          return userIdStr.startsWith(this.secrets.chatAppId)
+            ? userIdStr
+            : `${this.secrets.chatAppId}_${userIdStr}`;
+        })
+      : [
+          (() => {
+            const userIdStr = String(userId);
+            return userIdStr.startsWith(this.secrets.chatAppId)
+              ? userIdStr
+              : `${this.secrets.chatAppId}_${userIdStr}`;
+          })(),
+        ];
 
     const payload: GrantAccessRequest = {
       chatName: chatName,
@@ -293,11 +298,10 @@ export class EthoraSDKService implements ChatRepository {
 
     logger.debug(`Chat service API URL: ${grantUrl}`);
     logger.debug(`Request payload: ${JSON.stringify(payload)}`);
-    logger.debug(`Using XMPP usernames for members: ${members.join(", ")}`);
 
     try {
       return await this.makeRequest<ApiResponse>({
-        method: "POST",
+        method: 'POST',
         url: grantUrl,
         data: payload,
       });
@@ -308,10 +312,8 @@ export class EthoraSDKService implements ChatRepository {
           `Failed to grant user access. Status: ${
             error.response?.status
           }, Response: ${JSON.stringify(errorData)}`,
-          error
+          error,
         );
-        // Log the XMPP usernames that were attempted for debugging
-        logger.debug(`Attempted XMPP usernames: ${members.join(", ")}`);
       }
       throw error;
     }
@@ -320,27 +322,87 @@ export class EthoraSDKService implements ChatRepository {
   /**
    * Grants chatbot access to a chat room
    *
-   * @param workspaceId - The unique identifier of the workspace
+   * @param chatId - The unique identifier of the chat
    * @returns The API response
    */
-  async grantChatbotAccessToChatRoom(workspaceId: UUID): Promise<ApiResponse> {
-    logger.info(
-      `Granting chatbot access to chat room for workspace ${workspaceId}`
-    );
+  async grantChatbotAccessToChatRoom(chatId: UUID): Promise<ApiResponse> {
+    logger.info(`Granting chatbot access to chat room ${chatId}`);
 
     if (!this.secrets.chatBotJid) {
       const error = new Error(
-        "Chatbot JID not configured. Set ETHORA_CHAT_BOT_JID environment variable."
+        'Chatbot JID not configured. Set ETHORA_CHAT_BOT_JID environment variable.',
       );
-      logger.error("Cannot grant chatbot access", error);
+      logger.error('Cannot grant chatbot access', error);
       throw error;
     }
 
     // Extract username from JID (format: "username@domain" -> "username")
-    const chatbotUsername = this.secrets.chatBotJid.split("@")[0];
+    const chatbotUsername = this.secrets.chatBotJid.split('@')[0];
 
     // Use the same grant access method with chatbot JID
-    return this.grantUserAccessToChatRoom(workspaceId, chatbotUsername);
+    return this.grantUserAccessToChatRoom(chatId, chatbotUsername);
+  }
+
+  /**
+   * Removes a user's access to a chat room
+   *
+   * @param chatId - The unique identifier of the chat
+   * @param userId - The unique identifier of the user (or array of user IDs)
+   * @returns The API response
+   */
+  async removeUserAccessFromChatRoom(
+    chatId: UUID,
+    userId: UUID | UUID[],
+  ): Promise<ApiResponse> {
+    logger.info(`Removing user(s) access from chat room ${chatId}`);
+
+    const chatName = this.createChatName(chatId, false);
+    // Use /v2/chats/usersAccess/remove DELETE endpoint (fallback to legacy /v2/chats/users-access)
+    const revokeUrl = `${this.baseEthoraUrl}/v2/chats/users-access`;
+
+    // Convert single userId to array if needed
+    const members = Array.isArray(userId)
+      ? userId.map((id) => {
+          const userIdStr = String(id);
+          return userIdStr.startsWith(this.secrets.chatAppId)
+            ? userIdStr
+            : `${this.secrets.chatAppId}_${userIdStr}`;
+        })
+      : [
+          (() => {
+            const userIdStr = String(userId);
+            return userIdStr.startsWith(this.secrets.chatAppId)
+              ? userIdStr
+              : `${this.secrets.chatAppId}_${userIdStr}`;
+          })(),
+        ];
+
+    const payload: GrantAccessRequest = {
+      chatName: chatName,
+      members: members,
+    };
+
+    logger.debug(`Chat service API URL: ${revokeUrl}`);
+    logger.debug(`Request payload: ${JSON.stringify(payload)}`);
+
+    try {
+      return await this.makeRequest<ApiResponse>({
+        method: 'DELETE',
+        url: revokeUrl,
+        data: payload,
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorData = error.response?.data;
+        logger.error(
+          `Failed to remove user access. Status: ${
+            error.response?.status
+          }, Response: ${JSON.stringify(errorData)}`,
+          error,
+        );
+      }
+      throw error;
+    }
   }
 
   /**
@@ -350,7 +412,7 @@ export class EthoraSDKService implements ChatRepository {
    * @returns The API response
    */
   async deleteUsers(userIds: UUID[]): Promise<ApiResponse> {
-    logger.info(`Attempting to delete users: ${userIds.join(", ")}`);
+    logger.info(`Attempting to delete users: ${userIds.join(', ')}`);
     const deleteUrl = `${this.baseEthoraUrl}/v1/users/batch`;
 
     const payload = {
@@ -362,7 +424,7 @@ export class EthoraSDKService implements ChatRepository {
 
     try {
       return await this.makeRequest<ApiResponse>({
-        method: "DELETE",
+        method: 'DELETE',
         url: deleteUrl,
         data: payload,
       });
@@ -371,11 +433,11 @@ export class EthoraSDKService implements ChatRepository {
       if (
         axios.isAxiosError(error) &&
         error.response?.status === 422 &&
-        typeof error.response.data === "string" &&
-        error.response.data.includes("not found")
+        typeof error.response.data === 'string' &&
+        error.response.data.includes('not found')
       ) {
         logger.info(
-          "No users to delete from the chat service. The request contained non-existent users."
+          'No users to delete from the chat service. The request contained non-existent users.',
         );
         return { ok: false };
       }
@@ -384,23 +446,21 @@ export class EthoraSDKService implements ChatRepository {
   }
 
   /**
-   * Deletes a chat room from the chat service by its workspace ID
+   * Deletes a chat room from the chat service by its chat ID
    *
-   * This method sends a DELETE request to the Ethora API using the workspace ID
+   * This method sends a DELETE request to the Ethora API using the chat ID
    * to construct the chat name. It gracefully handles the case where the chat room
    * is already non-existent (422 Not Found).
    *
-   * @param workspaceId - The unique identifier of the workspace associated with the chat room
+   * @param chatId - The unique identifier of the chat associated with the chat room
    * @returns The JSON response from the chat service upon successful deletion or a success status if not found
    */
-  async deleteChatRoom(workspaceId: UUID): Promise<ApiResponse> {
-    logger.info(
-      `Attempting to delete chat room for workspace ID: ${workspaceId}`
-    );
+  async deleteChatRoom(chatId: UUID): Promise<ApiResponse> {
+    logger.info(`Attempting to delete chat room with ID: ${chatId}`);
     const deleteUrl = `${this.baseEthoraUrl}/v1/chats`;
 
     // We must use the short name when deleting the chat room
-    const chatName = this.createChatName(workspaceId, false);
+    const chatName = this.createChatName(chatId, false);
     const payload: DeleteChatRoomRequest = {
       name: chatName,
     };
@@ -410,7 +470,7 @@ export class EthoraSDKService implements ChatRepository {
 
     try {
       const response = await this.makeRequest<ApiResponse>({
-        method: "DELETE",
+        method: 'DELETE',
         url: deleteUrl,
         data: payload,
       });
@@ -426,13 +486,13 @@ export class EthoraSDKService implements ChatRepository {
         // Handle the case where the room does not exist (Ethora returns 422 with "not found" in body)
         if (
           statusCode === 422 &&
-          typeof responseText === "string" &&
-          responseText.toLowerCase().includes("not found")
+          typeof responseText === 'string' &&
+          responseText.toLowerCase().includes('not found')
         ) {
           logger.warn(
-            `Chat room '${chatName}' not found during deletion attempt (Ignored 422)`
+            `Chat room '${chatName}' not found during deletion attempt (Ignored 422)`,
           );
-          return { ok: false, reason: "Chat room not found" };
+          return { ok: false, reason: 'Chat room not found' };
         }
       }
 
@@ -454,27 +514,39 @@ export class EthoraSDKService implements ChatRepository {
    * - not-found: user was not found
    * - skipped: user update was skipped
    *
+   * Note: The API only accepts xmppUsername, firstName, lastName, username, and profileImage fields.
+   * Other fields will be filtered out automatically.
+   *
    * @param users - Array of user data to update (1-100 users)
    * @returns The API response with results array containing status for each user
    */
   async updateUsers(users: UpdateUserData[]): Promise<ApiResponse> {
     // Validate user count limit
     if (users.length === 0) {
-      throw new Error("At least 1 user is required for update");
+      throw new Error('At least 1 user is required for update');
     }
     if (users.length > 100) {
-      throw new Error("Maximum 100 users allowed per update request");
+      throw new Error('Maximum 100 users allowed per update request');
     }
 
     logger.info(`Attempting to update ${users.length} user(s)`);
 
-    const updateUrl = `${this.baseEthoraUrl}/v1/chats/users`;
+    const updateUrl = `${this.baseEthoraUrl}/v2/chats/users`;
 
     // Remove userId from payload if present, as API doesn't accept it
     // API expects xmppUsername or other identifier fields instead
+    // Also filter to only include allowed fields: xmppUsername, firstName, lastName, username, profileImage
     const cleanedUsers = users.map((user) => {
       const { userId, ...rest } = user;
-      return rest;
+      const allowedFields: UpdateUserData = {};
+
+      if (rest.xmppUsername) allowedFields.xmppUsername = rest.xmppUsername;
+      if (rest.firstName) allowedFields.firstName = rest.firstName;
+      if (rest.lastName) allowedFields.lastName = rest.lastName;
+      if (rest.username) allowedFields.username = rest.username;
+      if (rest.profileImage) allowedFields.profileImage = rest.profileImage;
+
+      return allowedFields;
     });
 
     const payload: UpdateUsersRequest = {
@@ -485,7 +557,7 @@ export class EthoraSDKService implements ChatRepository {
     logger.debug(`Request payload: ${JSON.stringify(payload)}`);
 
     return this.makeRequest<ApiResponse>({
-      method: "PATCH",
+      method: 'PATCH',
       url: updateUrl,
       data: payload,
     });
@@ -501,11 +573,14 @@ export class EthoraSDKService implements ChatRepository {
    *   - For 1-on-1 chats: use xmppUsernameA-xmppUsernameB format
    * - xmppUsername parameter: returns a specific user by XMPP username
    *
+   * Note: The xmppUsername query parameter may not be supported by the API yet.
+   * In that case, you can get all users and filter client-side.
+   *
    * @param params - Query parameters for filtering users (optional)
    * @returns The API response
    */
   async getUsers(params?: GetUsersQueryParams): Promise<ApiResponse> {
-    const getUrl = `${this.baseEthoraUrl}/v1/chats/users`;
+    const getUrl = `${this.baseEthoraUrl}/v2/chats/users`;
 
     // Build query parameters
     const queryParams: string[] = [];
@@ -514,22 +589,22 @@ export class EthoraSDKService implements ChatRepository {
     }
     if (params?.xmppUsername) {
       queryParams.push(
-        `xmppUsername=${encodeURIComponent(params.xmppUsername)}`
+        `xmppUsername=${encodeURIComponent(params.xmppUsername)}`,
       );
     }
 
     const urlWithParams =
-      queryParams.length > 0 ? `${getUrl}?${queryParams.join("&")}` : getUrl;
+      queryParams.length > 0 ? `${getUrl}?${queryParams.join('&')}` : getUrl;
 
     logger.info(
       params
         ? `Getting users with params: ${JSON.stringify(params)}`
-        : "Getting all users of the app"
+        : 'Getting all users of the app',
     );
     logger.debug(`Chat service API URL: ${urlWithParams}`);
 
     return this.makeRequest<ApiResponse>({
-      method: "GET",
+      method: 'GET',
       url: urlWithParams,
     });
   }
@@ -548,7 +623,7 @@ let repositoryInstance: EthoraSDKService | null = null;
 
 export function getEthoraSDKService(): EthoraSDKService {
   if (!repositoryInstance) {
-    logger.debug("Creating new EthoraSDKService instance");
+    logger.debug('Creating new EthoraSDKService instance');
     repositoryInstance = new EthoraSDKService();
   }
   return repositoryInstance;

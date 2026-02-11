@@ -1,6 +1,6 @@
 {
   "name": "@ethora/sdk-backend",
-  "version": "26.01.01",
+  "version": "26.02.01",
   "description": "TypeScript SDK for integrating with Ethora chat service backend API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -11,6 +11,8 @@
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
+    "test": "./scripts/test-with-log.sh",
+    "test-logs": "./scripts/test-logs.sh",
     "clean": "rm -rf dist",
     "prepublishOnly": "npm run build"
   },
