@@ -6,6 +6,7 @@ const assert = require('node:assert/strict');
 process.env.ETHORA_CHAT_API_URL = 'https://api.messenger-dev.vitall.com';
 process.env.ETHORA_CHAT_APP_ID = 'app123';
 process.env.ETHORA_CHAT_APP_SECRET = 'secret123';
+process.env.ETHORA_CHAT_BOT_JID = 'chatbot@xmpp.ethoradev.com';
 
 const { EthoraSDKService } = require('../dist/repositories/EthoraSDKService');
 
@@ -183,7 +184,7 @@ test('deleteUsers uses v1 endpoint and handles not-found 422 gracefully', async 
         config.url,
         'https://api.messenger-dev.vitall.com/v1/users/batch',
       );
-      assert.deepEqual(config.data, { usersIdList: ['u1'] });
+      assert.deepEqual(config.data, { usersIdList: ['app123_u1'] });
       throw axiosError(422, 'User not found');
     }
 

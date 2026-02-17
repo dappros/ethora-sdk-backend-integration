@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { randomUUID } from 'crypto';
 import { getEthoraSDKService, getSecrets } from '../index';
 import type { ApiResponse } from '../types';
