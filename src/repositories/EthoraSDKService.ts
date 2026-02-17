@@ -23,6 +23,7 @@ import type {
 } from '../types';
 import {
   getSecrets,
+  Secrets,
   DEFAULT_TIMEOUT,
   ETHORA_JID_DOMAIN,
 } from '../config/secrets';
@@ -36,10 +37,11 @@ const logger = getLogger('EthoraSDKService');
  */
 export class EthoraSDKService implements ChatRepository {
   private readonly baseEthoraUrl: string;
-  private readonly secrets = getSecrets();
+  private readonly secrets: Secrets;
   private readonly httpClient: AxiosInstance;
 
-  constructor() {
+  constructor(config?: { chatAppId?: string; chatAppSecret?: string }) {
+    this.secrets = getSecrets(config);
     this.baseEthoraUrl = this.secrets.chatApiUrl;
 
     // Create axios instance with default configuration
@@ -86,7 +88,7 @@ export class EthoraSDKService implements ChatRepository {
    */
   createChatUserJwtToken(userId: UUID): string {
     logger.debug(`Creating a client-side JWT token for user ID: ${userId}`);
-    return createClientToken(userId);
+    return createClientToken(userId, this.secrets);
   }
 
   /**
@@ -97,7 +99,7 @@ export class EthoraSDKService implements ChatRepository {
   private getHeaders(): Record<string, string> {
     logger.debug('Retrieving headers for a server-to-server API call');
     return {
-      'x-custom-token': createServerToken(),
+      'x-custom-token': createServerToken(this.secrets),
     };
   }
 
@@ -110,25 +112,50 @@ export class EthoraSDKService implements ChatRepository {
   private async makeRequest<T = ApiResponse>(
     config: AxiosRequestConfig,
   ): Promise<T> {
+    const headers: Record<string, any> = {
+      ...this.getHeaders(),
+      ...config.headers,
+    };
+    const token = headers['x-custom-token'];
+    const method = config.method?.toUpperCase() || 'UNKNOWN';
+    const url = config.url || '';
+
     try {
       const response = await this.httpClient.request<T>({
         ...config,
-        headers: {
-          ...this.getHeaders(),
-          ...config.headers,
-        },
+        headers,
         timeout: DEFAULT_TIMEOUT.total,
       });
-      return response.data;
+
+      logger.debug(`✅ [${method}] ${url} success. Token: ${token}`);
+      
+      // Return data with URL attached for observability
+      const data = response.data;
+      if (data && typeof data === 'object') {
+        (data as any).url = url;
+      }
+      return data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const axiosError = error as AxiosError;
-        logger.error(
-          `API call failed with status code: ${axiosError.response?.status}. ` +
-            `Response: ${axiosError.response?.data}`,
-          error,
-        );
-        throw error;
+        const status = axiosError.response?.status || 'No Status';
+        const resData = axiosError.response?.data;
+        const formattedRes = JSON.stringify(resData, null, 2);
+
+        const prettyMessage = 
+          `❌ [${method}] ${url} failed with status ${status}.\n` +
+          `Token: ${token}\n` +
+          `Response: ${formattedRes}`;
+
+        logger.error(prettyMessage);
+        
+        // Wrap in a new error with the pretty message so the consumer see it too
+        const enhancedError = new Error(prettyMessage);
+        (enhancedError as any).status = status;
+        (enhancedError as any).url = url;
+        (enhancedError as any).response = axiosError.response;
+        (enhancedError as any).config = axiosError.config;
+        throw enhancedError;
       }
       logger.error('An unexpected error occurred during API call', error);
       throw error;
@@ -299,24 +326,11 @@ export class EthoraSDKService implements ChatRepository {
     logger.debug(`Chat service API URL: ${grantUrl}`);
     logger.debug(`Request payload: ${JSON.stringify(payload)}`);
 
-    try {
-      return await this.makeRequest<ApiResponse>({
-        method: 'POST',
-        url: grantUrl,
-        data: payload,
-      });
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const errorData = error.response?.data;
-        logger.error(
-          `Failed to grant user access. Status: ${
-            error.response?.status
-          }, Response: ${JSON.stringify(errorData)}`,
-          error,
-        );
-      }
-      throw error;
-    }
+    return await this.makeRequest<ApiResponse>({
+      method: 'POST',
+      url: grantUrl,
+      data: payload,
+    });
   }
 
   /**
@@ -385,24 +399,11 @@ export class EthoraSDKService implements ChatRepository {
     logger.debug(`Chat service API URL: ${revokeUrl}`);
     logger.debug(`Request payload: ${JSON.stringify(payload)}`);
 
-    try {
-      return await this.makeRequest<ApiResponse>({
-        method: 'DELETE',
-        url: revokeUrl,
-        data: payload,
-      });
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const errorData = error.response?.data;
-        logger.error(
-          `Failed to remove user access. Status: ${
-            error.response?.status
-          }, Response: ${JSON.stringify(errorData)}`,
-          error,
-        );
-      }
-      throw error;
-    }
+    return await this.makeRequest<ApiResponse>({
+      method: 'DELETE',
+      url: revokeUrl,
+      data: payload,
+    });
   }
 
   /**
@@ -621,10 +622,16 @@ export class EthoraSDKService implements ChatRepository {
  */
 let repositoryInstance: EthoraSDKService | null = null;
 
-export function getEthoraSDKService(): EthoraSDKService {
-  if (!repositoryInstance) {
-    logger.debug('Creating new EthoraSDKService instance');
-    repositoryInstance = new EthoraSDKService();
+export function getEthoraSDKService(config?: {
+  chatAppId?: string;
+  chatAppSecret?: string;
+}): EthoraSDKService {
+  if (!repositoryInstance || config) {
+    const newService = new EthoraSDKService(config);
+    if (!repositoryInstance) {
+      repositoryInstance = newService;
+    }
+    return newService;
   }
   return repositoryInstance;
 }

@@ -42,6 +42,7 @@ export interface ClientTokenPayload {
 export interface ApiResponse {
   ok?: boolean;
   reason?: string;
+  url?: string;
   [key: string]: unknown;
 }
 

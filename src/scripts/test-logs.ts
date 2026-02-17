@@ -113,6 +113,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((error) => {
-  console.error('Test run failed:', error);
+  console.error(`\n❌ Test run failed: ${error.message || error}`);
   process.exit(1);
 });

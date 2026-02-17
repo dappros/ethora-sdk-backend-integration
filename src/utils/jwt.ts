@@ -4,7 +4,7 @@
 
 import jwt from "jsonwebtoken";
 import type { ServerTokenPayload, ClientTokenPayload } from "../types";
-import { getSecrets } from "../config/secrets";
+import { getSecrets, Secrets } from "../config/secrets";
 import { getLogger } from "./logger";
 
 const logger = getLogger("jwt-utils");
@@ -15,9 +15,9 @@ const logger = getLogger("jwt-utils");
  * @param payload - The payload to be encoded in the JWT
  * @returns The encoded JWT token
  */
-export function createJwtToken(payload: ServerTokenPayload | ClientTokenPayload): string {
+export function createJwtToken(payload: ServerTokenPayload | ClientTokenPayload, customSecrets?: Secrets): string {
   logger.debug("Creating a new JWT token");
-  const secrets = getSecrets();
+  const secrets = customSecrets || getSecrets();
   
   return jwt.sign(
     payload,
@@ -33,9 +33,9 @@ export function createJwtToken(payload: ServerTokenPayload | ClientTokenPayload)
  * 
  * @returns The encoded JWT token for server authentication
  */
-export function createServerToken(): string {
+export function createServerToken(customSecrets?: Secrets): string {
   logger.debug("Creating server-to-server JWT token");
-  const secrets = getSecrets();
+  const secrets = customSecrets || getSecrets();
   
   const payload: ServerTokenPayload = {
     data: {
@@ -44,7 +44,7 @@ export function createServerToken(): string {
     },
   };
   
-  return createJwtToken(payload);
+  return createJwtToken(payload, secrets);
 }
 
 /**
@@ -53,9 +53,9 @@ export function createServerToken(): string {
  * @param userId - The unique identifier of the user
  * @returns The encoded JWT token for client-side authentication
  */
-export function createClientToken(userId: string): string {
+export function createClientToken(userId: string, customSecrets?: Secrets): string {
   logger.debug(`Creating a client-side JWT token for user ID: ${userId}`);
-  const secrets = getSecrets();
+  const secrets = customSecrets || getSecrets();
   
   const payload: ClientTokenPayload = {
     data: {
@@ -65,7 +65,7 @@ export function createClientToken(userId: string): string {
     },
   };
   
-  const token = createJwtToken(payload);
+  const token = createJwtToken(payload, secrets);
   logger.info(`Client JWT token created for user ID: ${userId}`);
   return token;
 }
