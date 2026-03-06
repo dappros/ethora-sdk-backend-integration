@@ -282,3 +282,59 @@ test('getUsers builds correct v2 query params', async () => {
     'https://api.messenger-dev.vitall.com/v2/chats/users?chatName=a%20b&xmppUsername=u%2B1',
   );
 });
+
+test('getUserChats constructs correct v2 URL for user chats', async () => {
+  const service = new EthoraSDKService();
+  const urls = [];
+
+  service.httpClient.request = async (config) => {
+    urls.push(config.url);
+    return okResponse({ ok: true });
+  };
+
+  await service.getUserChats('u1');
+  await service.getUserChats('u2', { limit: 10, offset: 5, includeMembers: true });
+
+  assert.equal(
+    urls[0],
+    'https://api.messenger-dev.vitall.com/v2/apps/app123/users/u1/chats',
+  );
+  assert.equal(
+    urls[1],
+    'https://api.messenger-dev.vitall.com/v2/apps/app123/users/u2/chats?limit=10&offset=5&includeMembers=true',
+  );
+});
+
+test('updateChatRoom constructs correct v2 URL and payload', async () => {
+  const service = new EthoraSDKService();
+  const captures = [];
+
+  service.httpClient.request = async (config) => {
+    captures.push(config);
+    return okResponse({ ok: true });
+  };
+
+  // Test with short ID (requires prefixing)
+  await service.updateChatRoom('room-1', { title: 'New Room 1' });
+  // Test with already prefixed ID
+  await service.updateChatRoom('app123_room-2', { description: 'Desc 2' });
+  // Test with full JID
+  await service.updateChatRoom('app123_room-3@conference.domain.com', { title: 'New Room 3' });
+
+  assert.equal(captures[0].method, 'PATCH');
+  assert.equal(
+    captures[0].url,
+    'https://api.messenger-dev.vitall.com/v2/apps/app123/chats/app123_room-1',
+  );
+  assert.deepEqual(captures[0].data, { title: 'New Room 1' });
+
+  assert.equal(
+    captures[1].url,
+    'https://api.messenger-dev.vitall.com/v2/apps/app123/chats/app123_room-2',
+  );
+
+  assert.equal(
+    captures[2].url,
+    'https://api.messenger-dev.vitall.com/v2/apps/app123/chats/app123_room-3@conference.domain.com',
+  );
+});

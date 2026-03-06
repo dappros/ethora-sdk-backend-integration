@@ -141,10 +141,20 @@ export class ChatService {
 // routes/chat.ts
 import express, { Request, Response } from 'express';
 import { getEthoraSDKService } from '@ethora/sdk-backend';
+import type { 
+  ChatRepository, 
+  ApiResponse, 
+  CreateChatRoomRequest, 
+  CreateUserData, 
+  UpdateUserData, 
+  GetUsersQueryParams,
+  GetUserChatsQueryParams,
+  UUID
+} from '@ethora/sdk-backend';
 import axios from 'axios';
 
 const router = express.Router();
-const chatService = getEthoraSDKService();
+const chatService: ChatRepository = getEthoraSDKService();
 
 // Create a chat room for a workspace
 router.post(
@@ -152,9 +162,9 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       const { workspaceId } = req.params;
-      const roomData = req.body;
+      const roomData: Partial<CreateChatRoomRequest> = req.body;
 
-      const response = await chatService.createChatRoom(workspaceId, {
+      const response: ApiResponse = await chatService.createChatRoom(workspaceId, {
         title: roomData.title || `Chat Room ${workspaceId}`,
         uuid: workspaceId,
         type: roomData.type || 'group',
@@ -179,9 +189,9 @@ router.post(
 router.post('/users/:userId', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const userData = req.body;
+    const userData: CreateUserData = req.body;
 
-    const response = await chatService.createUser(userId, userData);
+    const response: ApiResponse = await chatService.createUser(userId, userData);
     res.json({ success: true, data: response });
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -254,11 +264,11 @@ router.get('/users/:userId/chat-token', (req: Request, res: Response) => {
 router.get('/users', async (req: Request, res: Response) => {
   try {
     const { chatName, xmppUsername } = req.query;
-    const params: any = {};
+    const params: GetUsersQueryParams = {};
     if (chatName) params.chatName = String(chatName);
     if (xmppUsername) params.xmppUsername = String(xmppUsername);
 
-    const response = await chatService.getUsers(
+    const response: ApiResponse = await chatService.getUsers(
       Object.keys(params).length > 0 ? params : undefined,
     );
     res.json({ success: true, data: response });
@@ -277,17 +287,12 @@ router.get('/users', async (req: Request, res: Response) => {
 // Update users (batch)
 router.patch('/users', async (req: Request, res: Response) => {
   try {
-    const { users } = req.body;
+    const { users } = req.body as { users: UpdateUserData[] };
     if (!Array.isArray(users) || users.length === 0) {
       return res.status(400).json({ error: 'users must be a non-empty array' });
     }
-    if (users.length > 100) {
-      return res
-        .status(400)
-        .json({ error: 'Maximum 100 users allowed per request' });
-    }
 
-    const response = await chatService.updateUsers(users);
+    const response: ApiResponse = await chatService.updateUsers(users);
     res.json({ success: true, data: response });
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -298,6 +303,33 @@ router.patch('/users', async (req: Request, res: Response) => {
     } else {
       res.status(500).json({ error: 'Internal server error' });
     }
+  }
+});
+
+// Update chat room
+router.patch(
+  '/workspaces/:workspaceId/chat',
+  async (req: Request, res: Response) => {
+    try {
+      const { workspaceId } = req.params;
+      const updateData: { title?: string; description?: string } = req.body;
+      const response: ApiResponse = await chatService.updateChatRoom(workspaceId, updateData);
+      res.json({ success: true, data: response });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to update chat room' });
+    }
+  },
+);
+
+// Get user chats
+router.get('/users/:userId/chats', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const query: GetUserChatsQueryParams = req.query as unknown as GetUserChatsQueryParams;
+    const response: ApiResponse = await chatService.getUserChats(userId, query);
+    res.json({ success: true, data: response });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get user chats' });
   }
 });
 
@@ -314,9 +346,9 @@ import axios from 'axios';
 
 @Injectable()
 export class ChatService {
-  private readonly ethoraService = getEthoraSDKService();
+  private readonly ethoraService: ChatRepository = getEthoraSDKService();
 
-  async createChatRoom(workspaceId: string, roomData?: any) {
+  async createChatRoom(workspaceId: string, roomData?: Partial<CreateChatRoomRequest>): Promise<ApiResponse> {
     try {
       return await this.ethoraService.createChatRoom(workspaceId, roomData);
     } catch (error) {
@@ -333,7 +365,7 @@ export class ChatService {
     }
   }
 
-  async createUser(userId: string, userData?: any) {
+  async createUser(userId: string, userData?: CreateUserData): Promise<ApiResponse> {
     try {
       return await this.ethoraService.createUser(userId, userData);
     } catch (error) {
@@ -366,13 +398,16 @@ export class ChatController {
   @Post('workspaces/:workspaceId/rooms')
   async createChatRoom(
     @Param('workspaceId') workspaceId: string,
-    @Body() roomData: any,
-  ) {
+    @Body() roomData: Partial<CreateChatRoomRequest>,
+  ): Promise<ApiResponse> {
     return this.chatService.createChatRoom(workspaceId, roomData);
   }
 
   @Post('users/:userId')
-  async createUser(@Param('userId') userId: string, @Body() userData: any) {
+  async createUser(
+    @Param('userId') userId: string, 
+    @Body() userData: CreateUserData
+  ): Promise<ApiResponse> {
     return this.chatService.createUser(userId, userData);
   }
 
@@ -396,12 +431,12 @@ export async function chatRoutes(fastify: FastifyInstance) {
   // Create chat room
   fastify.post(
     '/workspaces/:workspaceId/chat',
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request: FastifyRequest, reply: FastifyReply): Promise<ApiResponse | void> => {
       const { workspaceId } = request.params as { workspaceId: string };
-      const roomData = request.body as any;
+      const roomData = request.body as Partial<CreateChatRoomRequest>;
 
       try {
-        const response = await chatService.createChatRoom(
+        const response: ApiResponse = await chatService.createChatRoom(
           workspaceId,
           roomData,
         );
@@ -435,8 +470,8 @@ async function setupWorkspaceChat(
   workspaceId: string,
   userIds: string[],
   adminUserId: string,
-) {
-  const chatService = getEthoraSDKService();
+): Promise<{ success: boolean }> {
+  const chatService: ChatRepository = getEthoraSDKService();
 
   try {
     // 1. Create chat room
@@ -485,8 +520,8 @@ When a new user joins your platform:
 async function onboardNewUser(
   userId: string,
   userData: { firstName: string; lastName: string; email: string },
-) {
-  const chatService = getEthoraSDKService();
+): Promise<{ success: boolean; chatToken: string }> {
+  const chatService: ChatRepository = getEthoraSDKService();
 
   try {
     // Create user in chat service
@@ -498,7 +533,7 @@ async function onboardNewUser(
     });
 
     // Generate client token for frontend
-    const clientToken = chatService.createChatUserJwtToken(userId);
+    const clientToken: string = chatService.createChatUserJwtToken(userId);
 
     return {
       success: true,
@@ -516,8 +551,11 @@ async function onboardNewUser(
 When adding a user to an existing workspace:
 
 ```typescript
-async function addUserToWorkspace(workspaceId: string, userId: string) {
-  const chatService = getEthoraSDKService();
+async function addUserToWorkspace(
+  workspaceId: string,
+  userId: string,
+): Promise<{ success: boolean }> {
+  const chatService: ChatRepository = getEthoraSDKService();
 
   try {
     // Ensure user exists
@@ -543,8 +581,11 @@ async function addUserToWorkspace(workspaceId: string, userId: string) {
 When removing a user from a workspace:
 
 ```typescript
-async function removeUserFromWorkspace(workspaceId: string, userId: string) {
-  const chatService = getEthoraSDKService();
+async function removeUserFromWorkspace(
+  workspaceId: string,
+  userId: string,
+): Promise<{ success: boolean }> {
+  const chatService: ChatRepository = getEthoraSDKService();
 
   try {
     // Remove access from workspace chat room
@@ -561,8 +602,8 @@ async function removeUserFromWorkspace(workspaceId: string, userId: string) {
 async function removeMultipleUsersFromWorkspace(
   workspaceId: string,
   userIds: string[],
-) {
-  const chatService = getEthoraSDKService();
+): Promise<{ success: boolean }> {
+  const chatService: ChatRepository = getEthoraSDKService();
 
   try {
     await chatService.removeUserAccessFromChatRoom(workspaceId, userIds);
@@ -580,8 +621,11 @@ async function removeMultipleUsersFromWorkspace(
 When deleting a workspace:
 
 ```typescript
-async function cleanupWorkspaceChat(workspaceId: string, userIds: string[]) {
-  const chatService = getEthoraSDKService();
+async function cleanupWorkspaceChat(
+  workspaceId: string,
+  userIds: string[],
+): Promise<{ success: boolean }> {
+  const chatService: ChatRepository = getEthoraSDKService();
 
   try {
     // Delete chat room (handles non-existent gracefully)
@@ -609,21 +653,25 @@ async function cleanupWorkspaceChat(workspaceId: string, userIds: string[]) {
 Retrieve users from the chat service:
 
 ```typescript
-async function getUsersExample() {
-  const chatService = getEthoraSDKService();
+async function getUsersExample(): Promise<{ 
+  allUsers: ApiResponse; 
+  groupChatUsers: ApiResponse; 
+  oneOnOneUsers: ApiResponse 
+}> {
+  const chatService: ChatRepository = getEthoraSDKService();
 
   try {
     // Get all users
-    const allUsers = await chatService.getUsers();
+    const allUsers: ApiResponse = await chatService.getUsers();
     console.log(`Total users: ${allUsers.results?.length || 0}`);
 
     // Get users by chat name (group chat)
-    const groupChatUsers = await chatService.getUsers({
+    const groupChatUsers: ApiResponse = await chatService.getUsers({
       chatName: 'appId_workspaceId',
     });
 
     // Get users by chat name (1-on-1 chat)
-    const oneOnOneUsers = await chatService.getUsers({
+    const oneOnOneUsers: ApiResponse = await chatService.getUsers({
       chatName: 'userA-userB',
     });
 
@@ -640,37 +688,18 @@ async function getUsersExample() {
 Update multiple users at once:
 
 ```typescript
-async function updateUsersExample() {
-  const chatService = getEthoraSDKService();
+async function updateUsersExample(): Promise<ApiResponse> {
+  const chatService: ChatRepository = getEthoraSDKService();
 
   try {
     // Update multiple users (1-100 users per request)
-    const response = await chatService.updateUsers([
+    const response: ApiResponse = await chatService.updateUsers([
       {
         xmppUsername: 'appId_user1',
         firstName: 'John',
         lastName: 'Doe',
-        username: 'johndoe',
-        profileImage: 'https://example.com/avatar1.jpg',
-      },
-      {
-        xmppUsername: 'appId_user2',
-        firstName: 'Jane',
-        lastName: 'Smith',
-        username: 'janesmith',
-      },
-    ]);
-
-    // Check results
-    response.results?.forEach((result: any) => {
-      if (result.status === 'updated') {
-        console.log(`User ${result.xmppUsername} updated successfully`);
-      } else if (result.status === 'not-found') {
-        console.warn(`User ${result.xmppUsername} not found`);
-      } else if (result.status === 'skipped') {
-        console.log(`User ${result.xmppUsername} update skipped`);
       }
-    });
+    ]);
 
     return response;
   } catch (error) {
@@ -680,41 +709,103 @@ async function updateUsersExample() {
 }
 ```
 
+### Use Case 8: Updating Chat Room Metadata
+
+Update room title or description:
+
+```typescript
+async function updateRoomExample(): Promise<ApiResponse> {
+  const chatService: ChatRepository = getEthoraSDKService();
+
+  try {
+    const response: ApiResponse = await chatService.updateChatRoom('workspaceId', {
+      title: 'New Room Title',
+      description: 'New Description',
+    });
+    return response;
+  } catch (error) {
+    console.error('Failed to update room:', error);
+    throw error;
+  }
+}
+```
+
+### Use Case 9: Getting User Chats
+
+Retrieve all rooms the user has access to:
+
+```typescript
+async function getUserChatsExample(): Promise<ApiResponse> {
+  const chatService: ChatRepository = getEthoraSDKService();
+
+  try {
+    const query: GetUserChatsQueryParams = { 
+      limit: 20,
+      includeMembers: true 
+    };
+    const response: ApiResponse = await chatService.getUserChats('userId', query);
+    return response;
+  } catch (error) {
+    console.error('Failed to get user chats:', error);
+    throw error;
+  }
+}
+```
+
 ## API Reference
 
 ### Core Methods
 
-#### `createUser(userId: UUID, userData?: Record<string, unknown>): Promise<ApiResponse>`
+#### `createUser(userId: UUID, userData?: CreateUserData): Promise<ApiResponse>`
 
 Creates a user in the chat service using the `/v2/users/batch` endpoint.
 
-**Parameters:**
-- `userId` (UUID): The unique identifier of the user
-- `userData` (optional): Additional user data
-  - `firstName` (string): User's first name
-  - `lastName` (string): User's last name (minimum 2 characters)
-  - `email` (string): User's email address
-  - `password` (string): User's password
-  - `displayName` (string): Display name (will be split into firstName/lastName if needed)
+**Interface: `CreateUserData`**
+```typescript
+interface CreateUserData {
+  email: string;        // string: User's email address
+  firstName: string;    // string: User's first name
+  lastName: string;     // string: User's last name (min 2 chars)
+  password?: string;    // string (optional): User's password
+  displayName?: string; // string (optional): Full display name
+}
+```
 
-**Returns:** Promise resolving to the API response
+**Example Request:**
+```typescript
+await sdk.createUser("user-uuid-123", {
+  email: "john@example.com",
+  firstName: "John",
+  lastName: "Doe"
+});
+```
 
 **Note:** The API requires `lastName` to be at least 2 characters. If not provided or too short, defaults to "User".
 
 ---
 
-#### `createChatRoom(chatId: UUID, roomData?: Record<string, unknown>): Promise<ApiResponse>`
+#### `createChatRoom(chatId: UUID, roomData?: CreateChatRoomRequest): Promise<ApiResponse>`
 
 Creates a chat room using the `/v2/chats` endpoint.
 
-**Parameters:**
-- `chatId` (UUID): The unique identifier of the chat/workspace
-- `roomData` (optional): Room configuration
-  - `title` (string): Chat room title
-  - `uuid` (string): Room UUID (defaults to chatId)
-  - `type` (string): Room type (defaults to "group")
+**Interface: `CreateChatRoomRequest`**
+```typescript
+interface CreateChatRoomRequest {
+  title: string;  // string: The display name of the chat room
+  uuid: string;   // string: The workspace/chat identifier
+  type: string;   // string: The room type (e.g., "group")
+}
+```
 
-**Returns:** Promise resolving to the API response
+**Example Request:**
+```typescript
+const roomData: CreateChatRoomRequest = {
+  title: "Engineering",
+  uuid: "room-abc-123",
+  type: "group"
+};
+await sdk.createChatRoom("room-abc-123", roomData);
+```
 
 ---
 
@@ -722,11 +813,14 @@ Creates a chat room using the `/v2/chats` endpoint.
 
 Grants user(s) access to a chat room using the `/v2/chats/users-access` endpoint.
 
-**Parameters:**
-- `chatId` (UUID): The unique identifier of the chat/workspace
-- `userId` (UUID | UUID[]): Single user ID or array of user IDs
+**Example Request:**
+```typescript
+// Single user
+await sdk.grantUserAccessToChatRoom("workspace-123", "user-uuid-456");
 
-**Returns:** Promise resolving to the API response
+// Multiple users
+await sdk.grantUserAccessToChatRoom("workspace-123", ["user-1", "user-2"]);
+```
 
 **Note:** User IDs are automatically prefixed with `{appId}_` if they don't already have the prefix.
 
@@ -736,11 +830,10 @@ Grants user(s) access to a chat room using the `/v2/chats/users-access` endpoint
 
 Removes user(s) access from a chat room using the `/v2/chats/users-access` DELETE endpoint.
 
-**Parameters:**
-- `chatId` (UUID): The unique identifier of the chat/workspace
-- `userId` (UUID | UUID[]): Single user ID or array of user IDs to remove
-
-**Returns:** Promise resolving to the API response
+**Example Request:**
+```typescript
+await sdk.removeUserAccessFromChatRoom("workspace-123", "user-456");
+```
 
 **Note:** User IDs are automatically prefixed with `{appId}_` if they don't already have the prefix.
 
@@ -783,20 +876,79 @@ Retrieves users from the chat service using the `/v2/chats/users` endpoint.
 
 Updates multiple users at once using the `/v2/chats/users` PATCH endpoint.
 
-**Parameters:**
-- `users` (UpdateUserData[]): Array of user data to update (1-100 users)
-  - `xmppUsername` (string, required): XMPP username to identify the user
-  - `firstName` (string, optional): First name
-  - `lastName` (string, optional): Last name
-  - `username` (string, optional): Username
-  - `profileImage` (string, optional): Profile image URL
+**Interface: `UpdateUserData`**
+```typescript
+interface UpdateUserData {
+  xmppUsername: string;   // string: Required (format: {appId}_{userId})
+  firstName?: string;     // string (optional): New first name
+  lastName?: string;      // string (optional): New last name
+  username?: string;      // string (optional): New username
+  profileImage?: string;  // string (optional): URL to profile image
+  description?: string;   // string (optional): User bio/description
+  email?: string;         // string (optional): New email address
+}
+```
 
-**Returns:** Promise resolving to the API response with results array
+**Example Request:**
+```typescript
+await sdk.updateUsers([
+  { xmppUsername: "appId_user1", firstName: "NewName" }
+]);
+```
 
-**Response Status Values:**
-- `updated`: User was successfully updated (includes updated user data)
-- `not-found`: User was not found
-- `skipped`: User update was skipped
+---
+
+#### `getUserChats(userId: UUID, params?: GetUserChatsQueryParams): Promise<ApiResponse>`
+
+Retrieves all rooms the user has access to.
+
+**Interface: `GetUserChatsQueryParams`**
+```typescript
+interface GetUserChatsQueryParams {
+  limit?: number;           // number (optional): Pagination limit
+  offset?: number;          // number (optional): Pagination offset
+  includeMembers?: boolean; // boolean (optional): Whether to return member lists
+}
+```
+
+**Example Request:**
+```typescript
+const query: GetUserChatsQueryParams = { limit: 50, includeMembers: true };
+await sdk.getUserChats("user-uuid-123", query);
+```
+
+---
+
+#### `updateChatRoom(chatId: UUID, updateData: { title?: string; description?: string }): Promise<ApiResponse>`
+
+Updates the metadata for a specific chat room.
+
+**Example Request:**
+```typescript
+await sdk.updateChatRoom("workspace-123", {
+  title: "New Team Title",
+  description: "Updated room description"
+});
+```
+
+---
+
+#### `getUsers(params?: GetUsersQueryParams): Promise<ApiResponse>`
+
+Retrieves users from the chat service using the `/v2/chats/users` endpoint.
+
+**Interface: `GetUsersQueryParams`**
+```typescript
+interface GetUsersQueryParams {
+  chatName?: string;     // string (optional): Filter by roomId (appId_roomId)
+  xmppUsername?: string; // string (optional): Filter by specific JID
+}
+```
+
+**Example Request:**
+```typescript
+await sdk.getUsers({ chatName: "appId_workspace-123" });
+```
 
 **Limits:** 1-100 users per request
 
@@ -806,10 +958,10 @@ Updates multiple users at once using the `/v2/chats/users` PATCH endpoint.
 
 Deletes users from the chat service using the `/v1/users/batch` endpoint.
 
-**Parameters:**
-- `userIds` (UUID[]): Array of user IDs to delete
-
-**Returns:** Promise resolving to the API response
+**Example Request:**
+```typescript
+await sdk.deleteUsers(["user-id-1", "user-id-2"]);
+```
 
 **Note:** Gracefully handles non-existent users (422 status with "not found").
 
@@ -819,10 +971,10 @@ Deletes users from the chat service using the `/v1/users/batch` endpoint.
 
 Deletes a chat room using the `/v1/chats` endpoint.
 
-**Parameters:**
-- `chatId` (UUID): The unique identifier of the chat/workspace
-
-**Returns:** Promise resolving to the API response
+**Example Request:**
+```typescript
+await sdk.deleteChatRoom("workspace-uuid-123");
+```
 
 **Note:** Gracefully handles non-existent rooms (422 status with "not found").
 
