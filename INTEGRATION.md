@@ -48,6 +48,25 @@ The SDK also exposes the explicit tenant-admin surface added in the backend:
 
 These helpers target explicit `/v2/apps/{appId}/...` routes so a parent-app / tenant backend can manage child apps without relying on implicit token scope.
 
+## Token Types
+
+The Ethora API uses several JWT/token types with different purposes:
+
+- `B2B Server JWT`: used by this SDK automatically for server-to-server API calls. The backend accepts it primarily via `x-custom-token`, and many deployments also accept it in `Authorization: Bearer ...`.
+- `Client JWT`: created by `createChatUserJwtToken(userId)` for client/chat credential flows only.
+- `User JWT`: returned by Ethora login endpoints and used for user-session API calls outside this SDK's main server-to-server flow.
+- `App JWT`: app-scoped runtime token used for app-auth login/sign-up flows.
+
+If you are using explicit tenant-admin routes like `/v2/apps/{appId}/...`, the intended token for backend integrations is `B2B Server JWT`.
+
+## API Versioning
+
+For new integrations, prefer `/v2/...` endpoints.
+
+- Main runtime chat/user operations in this SDK use `/v2/...`.
+- Explicit tenant-admin helpers use `/v2/apps/{appId}/...`.
+- A few delete operations still map to legacy `/v1/...` endpoints because that is where backend parity currently exists.
+
 ## Installation
 
 ### Step 1: Install the Package
