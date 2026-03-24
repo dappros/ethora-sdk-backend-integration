@@ -22,6 +22,7 @@ export interface ServerTokenPayload {
   data: {
     appId: string;
     type: "server";
+    tenantId?: string;
   };
 }
 
@@ -44,6 +45,37 @@ export interface ApiResponse {
   reason?: string;
   url?: string;
   [key: string]: unknown;
+}
+
+export interface CreateAppRequest {
+  displayName: string;
+  domainName?: string;
+  appTagline?: string;
+  logoImage?: string;
+  sublogoImage?: string;
+  primaryColor?: string;
+  bundleId?: string;
+  [key: string]: unknown;
+}
+
+export interface ListAppsQueryParams {
+  limit?: number;
+  offset?: number;
+  order?: 'asc' | 'desc';
+  orderBy?: 'displayName' | 'createdAt';
+}
+
+export interface BatchCreateUsersRequest {
+  bypassEmailConfirmation?: boolean;
+  usersList: Array<{
+    email: string;
+    firstName: string;
+    lastName: string;
+    password?: string;
+    uuid?: string;
+    profileImage?: string;
+    [key: string]: unknown;
+  }>;
 }
 
 /**
@@ -115,6 +147,15 @@ export interface UpdateUsersRequest {
 export interface GetUsersQueryParams {
   chatName?: string; // Chat name (appId_uuId for group chats, xmppUsernameA-xmppUsernameB for 1-on-1)
   xmppUsername?: string; // XMPP username for getting a specific user
+}
+
+/**
+ * Get user chats query parameters
+ */
+export interface GetUserChatsQueryParams {
+  limit?: number;
+  offset?: number;
+  includeMembers?: boolean;
 }
 
 /**
@@ -210,4 +251,78 @@ export interface ChatRepository {
    * @returns The API response
    */
   getUsers(params?: GetUsersQueryParams): Promise<ApiResponse>;
+
+  /**
+   * Gets chat rooms for a specific user
+   *
+   * Endpoint: GET /v2/apps/{appId}/users/{userId}/chats
+   *
+   * @param userId - The unique identifier of the user
+   * @param params - Query parameters for pagination and including members
+   * @returns The API response
+   */
+  getUserChats(
+    userId: UUID,
+    params?: GetUserChatsQueryParams,
+  ): Promise<ApiResponse>;
+
+  /**
+   * Updates chat room title or description
+   *
+   * Endpoint: PATCH /v2/apps/{appId}/chats/{chatId}
+   *
+   * @param chatId - The unique identifier of the chat (canonical room name or full JID)
+   * @param updateData - Data to update (title, description)
+   * @returns The API response
+   */
+  updateChatRoom(
+    chatId: UUID,
+    updateData: { title?: string; description?: string },
+  ): Promise<ApiResponse>;
+
+  listApps(params?: ListAppsQueryParams): Promise<ApiResponse>;
+
+  getApp(appId: UUID): Promise<ApiResponse>;
+
+  createApp(appData: CreateAppRequest): Promise<ApiResponse>;
+
+  deleteApp(appId: UUID): Promise<ApiResponse>;
+
+  createUsersInApp(appId: UUID, payload: BatchCreateUsersRequest): Promise<ApiResponse>;
+
+  getUsersBatchJob(appId: UUID, jobId: UUID): Promise<ApiResponse>;
+
+  deleteUsersInApp(appId: UUID, userIds: UUID[]): Promise<ApiResponse>;
+
+  createChatRoomInApp(
+    appId: UUID,
+    chatId: UUID,
+    roomData?: Record<string, unknown>
+  ): Promise<ApiResponse>;
+
+  deleteChatRoomInApp(appId: UUID, chatId: UUID): Promise<ApiResponse>;
+
+  grantUserAccessToChatRoomInApp(
+    appId: UUID,
+    chatId: UUID,
+    userId: UUID | UUID[]
+  ): Promise<ApiResponse>;
+
+  removeUserAccessFromChatRoomInApp(
+    appId: UUID,
+    chatId: UUID,
+    userId: UUID | UUID[]
+  ): Promise<ApiResponse>;
+
+  getUserChatsInApp(
+    appId: UUID,
+    userId: UUID,
+    params?: GetUserChatsQueryParams
+  ): Promise<ApiResponse>;
+
+  updateChatRoomInApp(
+    appId: UUID,
+    chatId: UUID,
+    updateData: { title?: string; description?: string }
+  ): Promise<ApiResponse>;
 }

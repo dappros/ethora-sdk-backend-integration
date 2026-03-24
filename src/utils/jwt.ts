@@ -33,14 +33,18 @@ export function createJwtToken(payload: ServerTokenPayload | ClientTokenPayload,
  * 
  * @returns The encoded JWT token for server authentication
  */
-export function createServerToken(customSecrets?: Secrets): string {
+export function createServerToken(
+  customSecrets?: Secrets,
+  options?: { appId?: string; tenantId?: string },
+): string {
   logger.debug("Creating server-to-server JWT token");
   const secrets = customSecrets || getSecrets();
   
   const payload: ServerTokenPayload = {
     data: {
-      appId: secrets.chatAppId,
+      appId: options?.appId || secrets.chatAppId,
       type: "server",
+      ...(options?.tenantId ? { tenantId: options.tenantId } : {}),
     },
   };
   

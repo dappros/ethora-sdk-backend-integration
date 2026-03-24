@@ -20,6 +20,10 @@ import type {
   UpdateUserData,
   UpdateUsersRequest,
   GetUsersQueryParams,
+  GetUserChatsQueryParams,
+  CreateAppRequest,
+  ListAppsQueryParams,
+  BatchCreateUsersRequest,
 } from '../types';
 import {
   getSecrets,
@@ -101,6 +105,24 @@ export class EthoraSDKService implements ChatRepository {
     return {
       'x-custom-token': createServerToken(this.secrets),
     };
+  }
+
+  private createScopedChatName(appId: UUID, chatId: UUID): string {
+    const appIdStr = String(appId);
+    const chatIdStr = String(chatId);
+    if (chatIdStr.includes('@') || chatIdStr.startsWith(`${appIdStr}_`)) {
+      return chatIdStr;
+    }
+    return `${appIdStr}_${chatIdStr}`;
+  }
+
+  private createScopedMembers(appId: UUID, userId: UUID | UUID[]): string[] {
+    const appIdStr = String(appId);
+    const normalize = (value: UUID) => {
+      const userIdStr = String(value);
+      return userIdStr.startsWith(`${appIdStr}_`) ? userIdStr : `${appIdStr}_${userIdStr}`;
+    };
+    return Array.isArray(userId) ? userId.map(normalize) : [normalize(userId)];
   }
 
   /**
@@ -607,6 +629,198 @@ export class EthoraSDKService implements ChatRepository {
     return this.makeRequest<ApiResponse>({
       method: 'GET',
       url: urlWithParams,
+    });
+  }
+  /**
+   * Gets chat rooms for a specific user
+   *
+   * Endpoint: GET /v2/apps/{appId}/users/{userId}/chats
+   *
+   * @param userId - The unique identifier of the user
+   * @param params - Query parameters for pagination and including members
+   * @returns The API response
+   */
+  async getUserChats(
+    userId: UUID,
+    params?: GetUserChatsQueryParams,
+  ): Promise<ApiResponse> {
+    return this.getUserChatsInApp(this.secrets.chatAppId, userId, params);
+  }
+
+  async getUserChatsInApp(
+    appId: UUID,
+    userId: UUID,
+    params?: GetUserChatsQueryParams,
+  ): Promise<ApiResponse> {
+    const getUrl = `${this.baseEthoraUrl}/v2/apps/${appId}/users/${userId}/chats`;
+
+    // Build query parameters
+    const queryParams: string[] = [];
+    if (params?.limit !== undefined) {
+      queryParams.push(`limit=${params.limit}`);
+    }
+    if (params?.offset !== undefined) {
+      queryParams.push(`offset=${params.offset}`);
+    }
+    if (params?.includeMembers !== undefined) {
+      queryParams.push(`includeMembers=${params.includeMembers}`);
+    }
+
+    const urlWithParams =
+      queryParams.length > 0 ? `${getUrl}?${queryParams.join('&')}` : getUrl;
+
+    logger.info(`Getting chat rooms for user: ${userId}`);
+    logger.debug(`Chat service API URL: ${urlWithParams}`);
+
+    return this.makeRequest<ApiResponse>({
+      method: 'GET',
+      url: urlWithParams,
+    });
+  }
+
+  /**
+   * Updates chat room title or description
+   *
+   * Endpoint: PATCH /v2/apps/{appId}/chats/{chatId}
+   *
+   * @param chatId - The unique identifier of the chat (canonical room name or full JID)
+   * @param updateData - Data to update (title, description)
+   * @returns The API response
+   */
+  async updateChatRoom(
+    chatId: UUID,
+    updateData: { title?: string; description?: string },
+  ): Promise<ApiResponse> {
+    return this.updateChatRoomInApp(this.secrets.chatAppId, chatId, updateData);
+  }
+
+  async updateChatRoomInApp(
+    appId: UUID,
+    chatId: UUID,
+    updateData: { title?: string; description?: string },
+  ): Promise<ApiResponse> {
+    const chatName = this.createScopedChatName(appId, chatId);
+    const updateUrl = `${this.baseEthoraUrl}/v2/apps/${appId}/chats/${chatName}`;
+
+    logger.info(`Updating chat room: ${chatName}`);
+    logger.debug(`Chat service API URL: ${updateUrl}`);
+    logger.debug(`Request payload: ${JSON.stringify(updateData)}`);
+
+    return this.makeRequest<ApiResponse>({
+      method: 'PATCH',
+      url: updateUrl,
+      data: updateData,
+    });
+  }
+
+  async listApps(params?: ListAppsQueryParams): Promise<ApiResponse> {
+    const query = new URLSearchParams();
+    if (params?.limit !== undefined) query.set('limit', String(params.limit));
+    if (params?.offset !== undefined) query.set('offset', String(params.offset));
+    if (params?.order) query.set('order', params.order);
+    if (params?.orderBy) query.set('orderBy', params.orderBy);
+    const url = `${this.baseEthoraUrl}/v2/apps${query.toString() ? `?${query.toString()}` : ''}`;
+    return this.makeRequest<ApiResponse>({ method: 'GET', url });
+  }
+
+  async getApp(appId: UUID): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'GET',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}`,
+    });
+  }
+
+  async createApp(appData: CreateAppRequest): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'POST',
+      url: `${this.baseEthoraUrl}/v2/apps`,
+      data: appData,
+    });
+  }
+
+  async deleteApp(appId: UUID): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'DELETE',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}`,
+    });
+  }
+
+  async createUsersInApp(appId: UUID, payload: BatchCreateUsersRequest): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'POST',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/users/batch`,
+      data: payload,
+    });
+  }
+
+  async getUsersBatchJob(appId: UUID, jobId: UUID): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'GET',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/users/batch/${jobId}`,
+    });
+  }
+
+  async deleteUsersInApp(appId: UUID, userIds: UUID[]): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'DELETE',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/users/batch`,
+      data: { usersIdList: userIds.map((id) => String(id)) },
+    });
+  }
+
+  async createChatRoomInApp(
+    appId: UUID,
+    chatId: UUID,
+    roomData?: Record<string, unknown>,
+  ): Promise<ApiResponse> {
+    const payload: CreateChatRoomRequest = {
+      title: (roomData?.title as string) || `Chat Room ${chatId}`,
+      uuid: String(chatId),
+      type: (roomData?.type as string) || 'group',
+      ...roomData,
+    };
+    return this.makeRequest<ApiResponse>({
+      method: 'POST',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/chats`,
+      data: payload,
+    });
+  }
+
+  async deleteChatRoomInApp(appId: UUID, chatId: UUID): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'DELETE',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/chats`,
+      data: { name: this.createScopedChatName(appId, chatId) },
+    });
+  }
+
+  async grantUserAccessToChatRoomInApp(
+    appId: UUID,
+    chatId: UUID,
+    userId: UUID | UUID[],
+  ): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'POST',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/chats/users-access`,
+      data: {
+        chatName: this.createScopedChatName(appId, chatId),
+        members: this.createScopedMembers(appId, userId),
+      },
+    });
+  }
+
+  async removeUserAccessFromChatRoomInApp(
+    appId: UUID,
+    chatId: UUID,
+    userId: UUID | UUID[],
+  ): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'DELETE',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/chats/users-access`,
+      data: {
+        chatName: this.createScopedChatName(appId, chatId),
+        members: this.createScopedMembers(appId, userId),
+      },
     });
   }
 }
