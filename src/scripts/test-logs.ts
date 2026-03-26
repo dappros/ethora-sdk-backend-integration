@@ -70,8 +70,38 @@ async function main(): Promise<void> {
   logStepResult(results[results.length - 1]);
   assertResponseOk(results[results.length - 1]);
 
-  // 4. Remove user from room
-  logHeader('4. removeUserAccessFromChatRoom');
+  // 4. Get user chats (verify access)
+  logHeader('4. getUserChats');
+  const getUserChatsResult = await chatRepo.getUserChats(userId);
+  results.push({ name: 'getUserChats', response: getUserChatsResult });
+  logStepResult(results[results.length - 1]);
+  assertResponseOk(results[results.length - 1]);
+
+  // 5. Update chat room
+  logHeader('5. updateChatRoom');
+  const updateRoomResult = await chatRepo.updateChatRoom(chatId, {
+    title: `Updated Room Title ${runId}`,
+    description: 'Updated room description',
+  });
+  results.push({ name: 'updateChatRoom', response: updateRoomResult });
+  logStepResult(results[results.length - 1]);
+  assertResponseOk(results[results.length - 1]);
+
+  // 6. Update users
+  logHeader('6. updateUsers');
+  const updateUsersResult = await chatRepo.updateUsers([
+    {
+      xmppUsername: xmppUsername,
+      firstName: 'Updated',
+      lastName: 'User',
+    },
+  ]);
+  results.push({ name: 'updateUsers', response: updateUsersResult });
+  logStepResult(results[results.length - 1]);
+  assertResponseOk(results[results.length - 1]);
+
+  // 7. Remove user from room
+  logHeader('7. removeUserAccessFromChatRoom');
   const removeResult = await chatRepo.removeUserAccessFromChatRoom(
     chatId,
     userId,
@@ -80,29 +110,29 @@ async function main(): Promise<void> {
   logStepResult(results[results.length - 1]);
   assertResponseOk(results[results.length - 1]);
 
-  // 5. Delete room
-  logHeader('5. deleteChatRoom');
+  // 8. Delete room
+  logHeader('8. deleteChatRoom');
   const deleteRoomResult = await chatRepo.deleteChatRoom(chatId);
   results.push({ name: 'deleteChatRoom', response: deleteRoomResult });
   logStepResult(results[results.length - 1]);
   assertResponseOk(results[results.length - 1]);
 
-  // 6. Get user
-  logHeader('6. getUsers (by xmppUsername)');
+  // 9. Get user (verify metadata update)
+  logHeader('9. getUsers (by xmppUsername)');
   const getUserResult = await chatRepo.getUsers({ xmppUsername });
   results.push({ name: 'getUsers(xmppUsername)', response: getUserResult });
   logStepResult(results[results.length - 1]);
   assertResponseOk(results[results.length - 1]);
 
-  // 7. Get users
-  logHeader('7. getUsers (all)');
+  // 10. Get users (all)
+  logHeader('10. getUsers (all)');
   const getUsersResult = await chatRepo.getUsers();
   results.push({ name: 'getUsers(all)', response: getUsersResult });
   logStepResult(results[results.length - 1]);
   assertResponseOk(results[results.length - 1]);
 
-  // 8. Delete user
-  logHeader('8. deleteUsers');
+  // 11. Delete user
+  logHeader('11. deleteUsers');
   const deleteUserResult = await chatRepo.deleteUsers([userId]);
   results.push({ name: 'deleteUsers', response: deleteUserResult });
   logStepResult(results[results.length - 1]);

@@ -117,6 +117,15 @@ export interface GetUsersQueryParams {
 }
 
 /**
+ * Get user chats query parameters
+ */
+export interface GetUserChatsQueryParams {
+  limit?: number;
+  offset?: number;
+  includeMembers?: boolean;
+}
+
+/**
  * Chat repository interface
  */
 export interface ChatRepository {
@@ -209,4 +218,32 @@ export interface ChatRepository {
    * @returns The API response
    */
   getUsers(params?: GetUsersQueryParams): Promise<ApiResponse>;
+
+  /**
+   * Gets chat rooms for a specific user
+   *
+   * Endpoint: GET /v2/apps/{appId}/users/{userId}/chats
+   *
+   * @param userId - The unique identifier of the user
+   * @param params - Query parameters for pagination and including members
+   * @returns The API response
+   */
+  getUserChats(
+    userId: UUID,
+    params?: GetUserChatsQueryParams,
+  ): Promise<ApiResponse>;
+
+  /**
+   * Updates chat room title or description
+   *
+   * Endpoint: PATCH /v2/apps/{appId}/chats/{chatId}
+   *
+   * @param chatId - The unique identifier of the chat (canonical room name or full JID)
+   * @param updateData - Data to update (title, description)
+   * @returns The API response
+   */
+  updateChatRoom(
+    chatId: UUID,
+    updateData: { title?: string; description?: string },
+  ): Promise<ApiResponse>;
 }
