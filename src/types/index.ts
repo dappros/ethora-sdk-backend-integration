@@ -22,6 +22,7 @@ export interface ServerTokenPayload {
   data: {
     appId: string;
     type: "server";
+    tenantId?: string;
   };
 }
 
@@ -44,6 +45,37 @@ export interface ApiResponse {
   reason?: string;
   url?: string;
   [key: string]: unknown;
+}
+
+export interface CreateAppRequest {
+  displayName: string;
+  domainName?: string;
+  appTagline?: string;
+  logoImage?: string;
+  sublogoImage?: string;
+  primaryColor?: string;
+  bundleId?: string;
+  [key: string]: unknown;
+}
+
+export interface ListAppsQueryParams {
+  limit?: number;
+  offset?: number;
+  order?: 'asc' | 'desc';
+  orderBy?: 'displayName' | 'createdAt';
+}
+
+export interface BatchCreateUsersRequest {
+  bypassEmailConfirmation?: boolean;
+  usersList: Array<{
+    email: string;
+    firstName: string;
+    lastName: string;
+    password?: string;
+    uuid?: string;
+    profileImage?: string;
+    [key: string]: unknown;
+  }>;
 }
 
 /**
@@ -246,5 +278,51 @@ export interface ChatRepository {
   updateChatRoom(
     chatId: UUID,
     updateData: { title?: string; description?: string },
+  ): Promise<ApiResponse>;
+
+  listApps(params?: ListAppsQueryParams): Promise<ApiResponse>;
+
+  getApp(appId: UUID): Promise<ApiResponse>;
+
+  createApp(appData: CreateAppRequest): Promise<ApiResponse>;
+
+  deleteApp(appId: UUID): Promise<ApiResponse>;
+
+  createUsersInApp(appId: UUID, payload: BatchCreateUsersRequest): Promise<ApiResponse>;
+
+  getUsersBatchJob(appId: UUID, jobId: UUID): Promise<ApiResponse>;
+
+  deleteUsersInApp(appId: UUID, userIds: UUID[]): Promise<ApiResponse>;
+
+  createChatRoomInApp(
+    appId: UUID,
+    chatId: UUID,
+    roomData?: Record<string, unknown>
+  ): Promise<ApiResponse>;
+
+  deleteChatRoomInApp(appId: UUID, chatId: UUID): Promise<ApiResponse>;
+
+  grantUserAccessToChatRoomInApp(
+    appId: UUID,
+    chatId: UUID,
+    userId: UUID | UUID[]
+  ): Promise<ApiResponse>;
+
+  removeUserAccessFromChatRoomInApp(
+    appId: UUID,
+    chatId: UUID,
+    userId: UUID | UUID[]
+  ): Promise<ApiResponse>;
+
+  getUserChatsInApp(
+    appId: UUID,
+    userId: UUID,
+    params?: GetUserChatsQueryParams
+  ): Promise<ApiResponse>;
+
+  updateChatRoomInApp(
+    appId: UUID,
+    chatId: UUID,
+    updateData: { title?: string; description?: string }
   ): Promise<ApiResponse>;
 }

@@ -21,6 +21,9 @@ import type {
   UpdateUsersRequest,
   GetUsersQueryParams,
   GetUserChatsQueryParams,
+  CreateAppRequest,
+  ListAppsQueryParams,
+  BatchCreateUsersRequest,
 } from '../types';
 import {
   getSecrets,
@@ -102,6 +105,24 @@ export class EthoraSDKService implements ChatRepository {
     return {
       'x-custom-token': createServerToken(this.secrets),
     };
+  }
+
+  private createScopedChatName(appId: UUID, chatId: UUID): string {
+    const appIdStr = String(appId);
+    const chatIdStr = String(chatId);
+    if (chatIdStr.includes('@') || chatIdStr.startsWith(`${appIdStr}_`)) {
+      return chatIdStr;
+    }
+    return `${appIdStr}_${chatIdStr}`;
+  }
+
+  private createScopedMembers(appId: UUID, userId: UUID | UUID[]): string[] {
+    const appIdStr = String(appId);
+    const normalize = (value: UUID) => {
+      const userIdStr = String(value);
+      return userIdStr.startsWith(`${appIdStr}_`) ? userIdStr : `${appIdStr}_${userIdStr}`;
+    };
+    return Array.isArray(userId) ? userId.map(normalize) : [normalize(userId)];
   }
 
   /**
@@ -610,7 +631,6 @@ export class EthoraSDKService implements ChatRepository {
       url: urlWithParams,
     });
   }
-
   /**
    * Gets chat rooms for a specific user
    *
@@ -624,7 +644,15 @@ export class EthoraSDKService implements ChatRepository {
     userId: UUID,
     params?: GetUserChatsQueryParams,
   ): Promise<ApiResponse> {
-    const getUrl = `${this.baseEthoraUrl}/v2/apps/${this.secrets.chatAppId}/users/${userId}/chats`;
+    return this.getUserChatsInApp(this.secrets.chatAppId, userId, params);
+  }
+
+  async getUserChatsInApp(
+    appId: UUID,
+    userId: UUID,
+    params?: GetUserChatsQueryParams,
+  ): Promise<ApiResponse> {
+    const getUrl = `${this.baseEthoraUrl}/v2/apps/${appId}/users/${userId}/chats`;
 
     // Build query parameters
     const queryParams: string[] = [];
@@ -663,16 +691,16 @@ export class EthoraSDKService implements ChatRepository {
     chatId: UUID,
     updateData: { title?: string; description?: string },
   ): Promise<ApiResponse> {
-    // If the chatId is NOT a full JID and NOT already prefixed with appId, prefix it to get the canonical room name
-    let chatName = String(chatId);
-    if (
-      !chatName.includes('@') &&
-      !chatName.startsWith(`${this.secrets.chatAppId}_`)
-    ) {
-      chatName = `${this.secrets.chatAppId}_${chatName}`;
-    }
+    return this.updateChatRoomInApp(this.secrets.chatAppId, chatId, updateData);
+  }
 
-    const updateUrl = `${this.baseEthoraUrl}/v2/apps/${this.secrets.chatAppId}/chats/${chatName}`;
+  async updateChatRoomInApp(
+    appId: UUID,
+    chatId: UUID,
+    updateData: { title?: string; description?: string },
+  ): Promise<ApiResponse> {
+    const chatName = this.createScopedChatName(appId, chatId);
+    const updateUrl = `${this.baseEthoraUrl}/v2/apps/${appId}/chats/${chatName}`;
 
     logger.info(`Updating chat room: ${chatName}`);
     logger.debug(`Chat service API URL: ${updateUrl}`);
@@ -682,6 +710,117 @@ export class EthoraSDKService implements ChatRepository {
       method: 'PATCH',
       url: updateUrl,
       data: updateData,
+    });
+  }
+
+  async listApps(params?: ListAppsQueryParams): Promise<ApiResponse> {
+    const query = new URLSearchParams();
+    if (params?.limit !== undefined) query.set('limit', String(params.limit));
+    if (params?.offset !== undefined) query.set('offset', String(params.offset));
+    if (params?.order) query.set('order', params.order);
+    if (params?.orderBy) query.set('orderBy', params.orderBy);
+    const url = `${this.baseEthoraUrl}/v2/apps${query.toString() ? `?${query.toString()}` : ''}`;
+    return this.makeRequest<ApiResponse>({ method: 'GET', url });
+  }
+
+  async getApp(appId: UUID): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'GET',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}`,
+    });
+  }
+
+  async createApp(appData: CreateAppRequest): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'POST',
+      url: `${this.baseEthoraUrl}/v2/apps`,
+      data: appData,
+    });
+  }
+
+  async deleteApp(appId: UUID): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'DELETE',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}`,
+    });
+  }
+
+  async createUsersInApp(appId: UUID, payload: BatchCreateUsersRequest): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'POST',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/users/batch`,
+      data: payload,
+    });
+  }
+
+  async getUsersBatchJob(appId: UUID, jobId: UUID): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'GET',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/users/batch/${jobId}`,
+    });
+  }
+
+  async deleteUsersInApp(appId: UUID, userIds: UUID[]): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'DELETE',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/users/batch`,
+      data: { usersIdList: userIds.map((id) => String(id)) },
+    });
+  }
+
+  async createChatRoomInApp(
+    appId: UUID,
+    chatId: UUID,
+    roomData?: Record<string, unknown>,
+  ): Promise<ApiResponse> {
+    const payload: CreateChatRoomRequest = {
+      title: (roomData?.title as string) || `Chat Room ${chatId}`,
+      uuid: String(chatId),
+      type: (roomData?.type as string) || 'group',
+      ...roomData,
+    };
+    return this.makeRequest<ApiResponse>({
+      method: 'POST',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/chats`,
+      data: payload,
+    });
+  }
+
+  async deleteChatRoomInApp(appId: UUID, chatId: UUID): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'DELETE',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/chats`,
+      data: { name: this.createScopedChatName(appId, chatId) },
+    });
+  }
+
+  async grantUserAccessToChatRoomInApp(
+    appId: UUID,
+    chatId: UUID,
+    userId: UUID | UUID[],
+  ): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'POST',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/chats/users-access`,
+      data: {
+        chatName: this.createScopedChatName(appId, chatId),
+        members: this.createScopedMembers(appId, userId),
+      },
+    });
+  }
+
+  async removeUserAccessFromChatRoomInApp(
+    appId: UUID,
+    chatId: UUID,
+    userId: UUID | UUID[],
+  ): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'DELETE',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/chats/users-access`,
+      data: {
+        chatName: this.createScopedChatName(appId, chatId),
+        members: this.createScopedMembers(appId, userId),
+      },
     });
   }
 }

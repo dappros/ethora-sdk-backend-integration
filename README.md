@@ -38,6 +38,38 @@ Ethora exposes Swagger UI from every running backend instance at:
 
 If you are running a separate staging instance, the same pattern applies (e.g. `https://api.asterotoken.com/api-docs/`).
 
+## Tenant Admin / B2B Endpoints
+
+The SDK also exposes the explicit tenant-admin surface added in the backend:
+
+- `listApps()`, `getApp(appId)`, `createApp(appData)`, `deleteApp(appId)`
+- `createUsersInApp(appId, payload)`, `getUsersBatchJob(appId, jobId)`, `deleteUsersInApp(appId, userIds)`
+- `createChatRoomInApp(appId, chatId, roomData)`, `deleteChatRoomInApp(appId, chatId)`
+- `grantUserAccessToChatRoomInApp(appId, chatId, userIds)`, `removeUserAccessFromChatRoomInApp(appId, chatId, userIds)`
+- `getUserChatsInApp(appId, userId, params)`, `updateChatRoomInApp(appId, chatId, updateData)`
+
+These helpers target explicit `/v2/apps/{appId}/...` routes so a parent-app / tenant backend can manage child apps without relying on implicit token scope.
+
+## Token Types
+
+The Ethora API uses several JWT/token types with different purposes:
+
+- `B2B Server JWT`: used by this SDK automatically for server-to-server API calls. The backend accepts it primarily via `x-custom-token`, and many deployments also accept it in `Authorization: Bearer ...`.
+- `Client JWT`: created by `createChatUserJwtToken(userId)` for client/chat credential flows only.
+- `User JWT`: returned by Ethora login endpoints and used for user-session API calls outside this SDK's main server-to-server flow.
+- `App JWT`: legacy app-scoped runtime token. Frontend/bootstrap login and sign-up flows now prefer explicit `appId`, while old app-token auth remains accepted for backward compatibility.
+
+If you are using explicit tenant-admin routes like `/v2/apps/{appId}/...`, the intended token for backend integrations is `B2B Server JWT`.
+
+## API Versioning
+
+For new integrations, prefer `/v2/...` endpoints.
+
+- Main runtime chat/user operations in this SDK use `/v2/...`.
+- Explicit tenant-admin helpers use `/v2/apps/{appId}/...`.
+- A few delete operations still map to legacy `/v1/...` endpoints because that is where backend parity currently exists.
+- Frontend/bootstrap auth flows are moving toward explicit `appId` request context rather than relying on implicit app-token scope.
+
 ## Installation
 
 ### Step 1: Install the Package
@@ -463,6 +495,33 @@ export async function chatRoutes(fastify: FastifyInstance) {
 
 ## Common Use Cases
 
+### Use Case 0: Tenant-admin / child-app management
+
+Create and manage a child app through the explicit B2B admin surface:
+
+```typescript
+const sdk = getEthoraSDKService();
+
+const app = await sdk.createApp({ displayName: 'Tenant Managed Demo' });
+const childAppId = String((app as any).app?._id || (app as any).result?._id || '');
+
+await sdk.createUsersInApp(childAppId, {
+  bypassEmailConfirmation: true,
+  usersList: [
+    { uuid: 'workspace-u1', email: 'workspace-u1@example.com', firstName: 'Workspace', lastName: 'One' },
+    { uuid: 'workspace-u2', email: 'workspace-u2@example.com', firstName: 'Workspace', lastName: 'Two' },
+  ],
+});
+
+await sdk.createChatRoomInApp(childAppId, 'workspace-room', {
+  title: 'Workspace Room',
+  uuid: 'workspace-room',
+  type: 'public',
+});
+
+await sdk.grantUserAccessToChatRoomInApp(childAppId, 'workspace-room', ['workspace-u1', 'workspace-u2']);
+```
+
 ### Use Case 1: Workspace Setup Flow
 
 When creating a new workspace, set up the chat room and initial users:
@@ -756,6 +815,28 @@ async function getUserChatsExample(): Promise<ApiResponse> {
 
 ## API Reference
 
+### Tenant-admin methods
+
+#### `createApp(appData: CreateAppRequest): Promise<ApiResponse>`
+
+Creates a child app through `POST /v2/apps`.
+
+#### `createUsersInApp(appId: UUID, payload: BatchCreateUsersRequest): Promise<ApiResponse>`
+
+Starts an async user-batch job through `POST /v2/apps/{appId}/users/batch`.
+
+#### `createChatRoomInApp(appId: UUID, chatId: UUID, roomData?: Record<string, unknown>): Promise<ApiResponse>`
+
+Creates a chat in a target app through `POST /v2/apps/{appId}/chats`.
+
+#### `grantUserAccessToChatRoomInApp(appId: UUID, chatId: UUID, userId: UUID | UUID[]): Promise<ApiResponse>`
+
+Adds user access in a target app through `POST /v2/apps/{appId}/chats/users-access`.
+
+#### `deleteChatRoomInApp(appId: UUID, chatId: UUID): Promise<ApiResponse>`
+
+Deletes a chat in a target app through `DELETE /v2/apps/{appId}/chats`.
+
 ### Core Methods
 
 #### `createUser(userId: UUID, userData?: CreateUserData): Promise<ApiResponse>`
@@ -1006,6 +1087,8 @@ Creates a client-side JWT token for user authentication.
 - `userId` (UUID): The unique identifier of the user
 
 **Returns:** The encoded JWT token for client-side authentication
+
+**Important:** Pass the same canonical user ID/UUID that your backend uses when creating that user in Ethora. Do not switch between different user-id formats when creating the user and then minting the client token.
 
 ---
 
