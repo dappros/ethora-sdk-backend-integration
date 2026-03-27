@@ -114,6 +114,9 @@ export interface UpdateUsersRequest {
 export interface GetUsersQueryParams {
   chatName?: string; // Chat name (appId_uuId for group chats, xmppUsernameA-xmppUsernameB for 1-on-1)
   xmppUsername?: string; // XMPP username for getting a specific user
+  userId?: string; // User UUID or Mongo _id (backward-compatible single-user lookup)
+  limit?: number; // Pagination limit (1-500)
+  offset?: number; // Pagination offset (>= 0)
 }
 
 /**

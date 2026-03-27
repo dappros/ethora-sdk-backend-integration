@@ -452,12 +452,14 @@ export class EthoraSDKService implements ChatRepository {
         data: payload,
       });
     } catch (error) {
+      const statusCode = (error as any)?.status;
+      const responseText = (error as any)?.response?.data;
+
       // Handle the case where users don't exist (422 with "not found")
       if (
-        axios.isAxiosError(error) &&
-        error.response?.status === 422 &&
-        typeof error.response.data === 'string' &&
-        error.response.data.includes('not found')
+        statusCode === 422 &&
+        typeof responseText === 'string' &&
+        responseText.toLowerCase().includes('not found')
       ) {
         logger.info(
           'No users to delete from the chat service. The request contained non-existent users.',
@@ -501,22 +503,19 @@ export class EthoraSDKService implements ChatRepository {
       logger.info(`Chat room '${chatName}' successfully deleted`);
       return response;
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const axiosError = error as AxiosError;
-        const statusCode = axiosError.response?.status;
-        const responseText = axiosError.response?.data;
+      const statusCode = (error as any)?.status;
+      const responseText = (error as any)?.response?.data;
 
-        // Handle the case where the room does not exist (Ethora returns 422 with "not found" in body)
-        if (
-          statusCode === 422 &&
-          typeof responseText === 'string' &&
-          responseText.toLowerCase().includes('not found')
-        ) {
-          logger.warn(
-            `Chat room '${chatName}' not found during deletion attempt (Ignored 422)`,
-          );
-          return { ok: false, reason: 'Chat room not found' };
-        }
+      // Handle the case where the room does not exist (Ethora returns 422 with "not found" in body)
+      if (
+        statusCode === 422 &&
+        typeof responseText === 'string' &&
+        responseText.toLowerCase().includes('not found')
+      ) {
+        logger.warn(
+          `Chat room '${chatName}' not found during deletion attempt (Ignored 422)`,
+        );
+        return { ok: false, reason: 'Chat room not found' };
       }
 
       // Re-throw if it's not a "not found" case
@@ -614,6 +613,15 @@ export class EthoraSDKService implements ChatRepository {
       queryParams.push(
         `xmppUsername=${encodeURIComponent(params.xmppUsername)}`,
       );
+    }
+    if (params?.userId) {
+      queryParams.push(`userId=${encodeURIComponent(params.userId)}`);
+    }
+    if (params?.limit !== undefined) {
+      queryParams.push(`limit=${params.limit}`);
+    }
+    if (params?.offset !== undefined) {
+      queryParams.push(`offset=${params.offset}`);
     }
 
     const urlWithParams =

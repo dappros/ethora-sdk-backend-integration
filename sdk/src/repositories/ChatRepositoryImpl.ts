@@ -436,12 +436,14 @@ export class EthoraSDKService implements ChatRepository {
         data: payload,
       });
     } catch (error) {
+      const statusCode = (error as any)?.status;
+      const responseText = (error as any)?.response?.data;
+
       // Handle the case where users don't exist (422 with "not found")
       if (
-        axios.isAxiosError(error) &&
-        error.response?.status === 422 &&
-        typeof error.response.data === 'string' &&
-        error.response.data.includes('not found')
+        statusCode === 422 &&
+        typeof responseText === 'string' &&
+        responseText.toLowerCase().includes('not found')
       ) {
         logger.info(
           'No users to delete from the chat service. The request contained non-existent users.',
@@ -598,6 +600,15 @@ export class EthoraSDKService implements ChatRepository {
       queryParams.push(
         `xmppUsername=${encodeURIComponent(params.xmppUsername)}`,
       );
+    }
+    if (params?.userId) {
+      queryParams.push(`userId=${encodeURIComponent(params.userId)}`);
+    }
+    if (params?.limit !== undefined) {
+      queryParams.push(`limit=${params.limit}`);
+    }
+    if (params?.offset !== undefined) {
+      queryParams.push(`offset=${params.offset}`);
     }
 
     const urlWithParams =
