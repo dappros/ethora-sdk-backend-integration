@@ -22,124 +22,157 @@ function assertResponseOk(result: StepResult): void {
   }
 }
 
-async function main(): Promise<void> {
-  const runId = randomUUID().substring(0, 8);
-  const chatId = `test-room-${runId}`;
-  const userId = `test-user-${runId}`;
+async function runStep(
+  name: string,
+  request: () => Promise<ApiResponse>,
+  results: StepResult[],
+): Promise<ApiResponse> {
+  logHeader(name);
+  const response = await request();
+  const result = { name, response };
+  results.push(result);
+  logStepResult(result);
+  assertResponseOk(result);
+  return response;
+}
 
+async function runReadOnlyChecks(results: StepResult[]): Promise<void> {
   const secrets = getSecrets();
-  const xmppUsername = `${secrets.chatAppId}_${userId}`;
-
   const chatRepo = getEthoraSDKService();
 
-  logHeader(`Ethora Requests Test (runId: ${runId})`);
+  await runStep('GET /v2/apps', () => chatRepo.listApps({ limit: 5, offset: 0 }), results);
+  await runStep(`GET /v2/apps/${secrets.chatAppId}`, () => chatRepo.getApp(secrets.chatAppId), results);
+  await runStep(
+    `GET /v2/apps/${secrets.chatAppId}/tokens`,
+    () => chatRepo.listAppTokens(secrets.chatAppId),
+    results,
+  );
+  await runStep(
+    `GET /v2/apps/${secrets.chatAppId}/bot`,
+    () => chatRepo.getAppBot(secrets.chatAppId),
+    results,
+  );
+  await runStep(
+    `GET /v2/apps/${secrets.chatAppId}/chats`,
+    () => chatRepo.listChatsInApp(secrets.chatAppId, { limit: 5, offset: 0, includeMembers: false }),
+    results,
+  );
+  await runStep('GET /v2/chats/users', () => chatRepo.getUsers({ limit: 5, offset: 0 }), results);
+}
+
+async function runFullCycle(results: StepResult[]): Promise<void> {
+  const secrets = getSecrets();
+  const chatRepo = getEthoraSDKService();
+  const runId = randomUUID().substring(0, 8);
+  const appUserId = `sdk-user-${runId}`;
+  const chatId = `sdk-chat-${runId}`;
+  const targetAppId = secrets.chatAppId;
+  const xmppUsername = `${targetAppId}_${appUserId}`;
+
+  try {
+    await runStep(
+      `POST /v2/apps/${targetAppId}/users/batch`,
+      () =>
+        chatRepo.createUsersInApp(targetAppId, {
+          bypassEmailConfirmation: true,
+          usersList: [
+            {
+              email: `${appUserId}@example.com`,
+              firstName: 'SDK',
+              lastName: 'User',
+              uuid: appUserId,
+            },
+          ],
+        }),
+      results,
+    );
+
+    await runStep(
+      `POST /v2/apps/${targetAppId}/chats`,
+      () =>
+        chatRepo.createChatRoomInApp(targetAppId, chatId, {
+          title: `SDK Room ${runId}`,
+          type: 'group',
+        }),
+      results,
+    );
+
+    await runStep(
+      `POST /v2/apps/${targetAppId}/chats/users-access`,
+      () => chatRepo.grantUserAccessToChatRoomInApp(targetAppId, chatId, appUserId),
+      results,
+    );
+
+    await runStep(
+      'PATCH /v2/chats/users',
+      () =>
+        chatRepo.updateUsers([
+          {
+            xmppUsername,
+            firstName: 'SDK',
+            lastName: `Updated${runId}`,
+          },
+        ]),
+      results,
+    );
+
+    await runStep(
+      `GET /v2/apps/${targetAppId}/users/${appUserId}/chats`,
+      () => chatRepo.getUserChats(appUserId, { limit: 5, offset: 0, includeMembers: true }),
+      results,
+    );
+
+    await runStep(
+      `PATCH /v2/apps/${targetAppId}/chats/{chatId}`,
+      () => chatRepo.updateChatRoomInApp(targetAppId, chatId, { title: `SDK Updated ${runId}` }),
+      results,
+    );
+
+    await runStep(
+      `DELETE /v2/apps/${targetAppId}/chats/users-access`,
+      () => chatRepo.removeUserAccessFromChatRoomInApp(targetAppId, chatId, appUserId),
+      results,
+    );
+
+    await runStep(
+      `DELETE /v2/apps/${targetAppId}/users/batch`,
+      () => chatRepo.deleteUsersInApp(targetAppId, [appUserId]),
+      results,
+    );
+
+    await runStep(
+      `DELETE /v2/apps/${targetAppId}/chats`,
+      () => chatRepo.deleteChatRoomInApp(targetAppId, chatId),
+      results,
+    );
+  } catch (error) {
+    console.error('Full-cycle mode failed before cleanup completion:', error);
+    throw error;
+  }
+}
+
+async function main(): Promise<void> {
+  const fullCycle =
+    String(process.env.ETHORA_TEST_LOGS_FULL_CYCLE || '').toLowerCase() === 'true';
+
+  const secrets = getSecrets();
+  const runId = randomUUID().substring(0, 8);
+
+  logHeader(`Ethora B2B Requests Test (runId: ${runId})`);
   console.log(`Base URL: ${secrets.chatApiUrl}`);
-  console.log(`Chat ID: ${chatId}`);
-  console.log(`User ID: ${userId}`);
-  console.log(`XMPP Username: ${xmppUsername}`);
+  console.log(`App ID: ${secrets.chatAppId}`);
+  console.log(`Mode: ${fullCycle ? 'full-cycle' : 'read-only'}`);
 
   const results: StepResult[] = [];
 
-  // 1. Create user
-  logHeader('1. createUser');
-  const createUserResult = await chatRepo.createUser(userId, {
-    firstName: 'Test',
-    lastName: 'User',
-    email: `${userId}@example.com`,
-    displayName: `Test User ${runId}`,
-  });
-  results.push({ name: 'createUser', response: createUserResult });
-  logStepResult(results[results.length - 1]);
-  assertResponseOk(results[results.length - 1]);
+  await runReadOnlyChecks(results);
 
-  // 2. Create room
-  logHeader('2. createChatRoom');
-  const createRoomResult = await chatRepo.createChatRoom(chatId, {
-    title: `Test Room ${runId}`,
-    uuid: chatId,
-    type: 'group',
-  });
-  results.push({ name: 'createChatRoom', response: createRoomResult });
-  logStepResult(results[results.length - 1]);
-  assertResponseOk(results[results.length - 1]);
-
-  // 3. Add user to room
-  logHeader('3. grantUserAccessToChatRoom');
-  const grantResult = await chatRepo.grantUserAccessToChatRoom(chatId, userId);
-  results.push({ name: 'grantUserAccessToChatRoom', response: grantResult });
-  logStepResult(results[results.length - 1]);
-  assertResponseOk(results[results.length - 1]);
-
-  // 4. Get user chats (verify access)
-  logHeader('4. getUserChats');
-  const getUserChatsResult = await chatRepo.getUserChats(userId);
-  results.push({ name: 'getUserChats', response: getUserChatsResult });
-  logStepResult(results[results.length - 1]);
-  assertResponseOk(results[results.length - 1]);
-
-  // 5. Update chat room
-  logHeader('5. updateChatRoom');
-  const updateRoomResult = await chatRepo.updateChatRoom(chatId, {
-    title: `Updated Room Title ${runId}`,
-    description: 'Updated room description',
-  });
-  results.push({ name: 'updateChatRoom', response: updateRoomResult });
-  logStepResult(results[results.length - 1]);
-  assertResponseOk(results[results.length - 1]);
-
-  // 6. Update users
-  logHeader('6. updateUsers');
-  const updateUsersResult = await chatRepo.updateUsers([
-    {
-      xmppUsername: xmppUsername,
-      firstName: 'Updated',
-      lastName: 'User',
-    },
-  ]);
-  results.push({ name: 'updateUsers', response: updateUsersResult });
-  logStepResult(results[results.length - 1]);
-  assertResponseOk(results[results.length - 1]);
-
-  // 7. Remove user from room
-  logHeader('7. removeUserAccessFromChatRoom');
-  const removeResult = await chatRepo.removeUserAccessFromChatRoom(
-    chatId,
-    userId,
-  );
-  results.push({ name: 'removeUserAccessFromChatRoom', response: removeResult });
-  logStepResult(results[results.length - 1]);
-  assertResponseOk(results[results.length - 1]);
-
-  // 8. Delete room
-  logHeader('8. deleteChatRoom');
-  const deleteRoomResult = await chatRepo.deleteChatRoom(chatId);
-  results.push({ name: 'deleteChatRoom', response: deleteRoomResult });
-  logStepResult(results[results.length - 1]);
-  assertResponseOk(results[results.length - 1]);
-
-  // 9. Get user (verify metadata update)
-  logHeader('9. getUsers (by xmppUsername)');
-  const getUserResult = await chatRepo.getUsers({ xmppUsername });
-  results.push({ name: 'getUsers(xmppUsername)', response: getUserResult });
-  logStepResult(results[results.length - 1]);
-  assertResponseOk(results[results.length - 1]);
-
-  // 10. Get users (all)
-  logHeader('10. getUsers (all)');
-  const getUsersResult = await chatRepo.getUsers();
-  results.push({ name: 'getUsers(all)', response: getUsersResult });
-  logStepResult(results[results.length - 1]);
-  assertResponseOk(results[results.length - 1]);
-
-  // 11. Delete user
-  logHeader('11. deleteUsers');
-  const deleteUserResult = await chatRepo.deleteUsers([userId]);
-  results.push({ name: 'deleteUsers', response: deleteUserResult });
-  logStepResult(results[results.length - 1]);
-  assertResponseOk(results[results.length - 1]);
+  if (fullCycle) {
+    await runFullCycle(results);
+  }
 
   logHeader('Done');
-  console.log('All requests completed in sequence.');
+  console.log(`All requests completed (${results.length} steps).`);
 }
 
 main().catch((error) => {

@@ -20,7 +20,6 @@ yarn add @ethora/sdk-backend
 ETHORA_CHAT_API_URL=https://api.ethoradev.com
 ETHORA_CHAT_APP_ID=your_app_id
 ETHORA_CHAT_APP_SECRET=your_app_secret
-ETHORA_CHAT_BOT_JID=your_bot_jid@domain.com  # Optional
 ```
 
 ### 2. Basic Usage
@@ -160,16 +159,6 @@ await chatRepo.grantUserAccessToChatRoom(workspaceId, [
   "user-3",
 ]);
 ```
-
-#### `grantChatbotAccessToChatRoom(workspaceId: UUID): Promise<ApiResponse>`
-
-Grants chatbot access to a chat room. Requires `ETHORA_CHAT_BOT_JID` environment variable.
-
-**Parameters:**
-
-- `workspaceId` (UUID): The unique identifier of the workspace
-
-**Returns:** Promise resolving to the API response
 
 #### `removeUserAccessFromChatRoom(workspaceId: UUID, userId: UUID | UUID[]): Promise<ApiResponse>`
 
@@ -392,4 +381,3 @@ The SDK uses different API versions for different operations:
 - **User Retrieval**: `/v2/chats/users`
 - **User Deletion**: `/v1/users/batch`
 - **Chat Room Deletion**: `/v1/chats`
-

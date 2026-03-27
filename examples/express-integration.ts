@@ -82,27 +82,6 @@ app.post(
 );
 
 /**
- * Grant chatbot access to a chat room
- */
-app.post('/workspaces/:workspaceId/chat/chatbot', async (req: Request, res: Response) => {
-  try {
-    const { workspaceId } = req.params;
-
-    await chatRepo.grantChatbotAccessToChatRoom(workspaceId);
-    res.json({ success: true, message: 'Chatbot access granted' });
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      res.status(error.response?.status || 500).json({
-        error: 'Failed to grant chatbot access',
-        details: error.response?.data,
-      });
-    } else {
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  }
-});
-
-/**
  * Get client JWT token for a user
  */
 app.get('/users/:userId/chat-token', (req: Request, res: Response) => {
@@ -187,6 +166,5 @@ app.listen(PORT, () => {
 });
 
 export default app;
-
 
 

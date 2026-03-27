@@ -14,8 +14,6 @@ export interface Secrets {
   chatAppId: string;
   /** Secret key for JWT token generation */
   chatAppSecret: string;
-  /** Chatbot JID (optional) */
-  chatBotJid?: string;
 }
 
 /**
@@ -47,13 +45,15 @@ export const ETHORA_JID_DOMAIN = "@conference.xmpp.ethoradev.com";
  * In a real implementation, this would read from environment variables,
  * a secrets manager, or a configuration file.
  *
+ * @param overrides - Optional overrides for appId and appSecret
  * @returns Secrets configuration object
  * @throws Error if required secrets are not configured
  */
-export function getSecretsSync(): Secrets {
+export function getSecretsSync(overrides?: Partial<Secrets>): Secrets {
   const chatApiUrl = process.env.ETHORA_CHAT_API_URL;
-  const chatAppId = process.env.ETHORA_CHAT_APP_ID;
-  const chatAppSecret = process.env.ETHORA_CHAT_APP_SECRET;
+  const chatAppId = overrides?.chatAppId || process.env.ETHORA_CHAT_APP_ID;
+  const chatAppSecret =
+    overrides?.chatAppSecret || process.env.ETHORA_CHAT_APP_SECRET;
 
   if (!chatApiUrl || !chatAppId || !chatAppSecret) {
     throw new Error(
@@ -68,7 +68,6 @@ export function getSecretsSync(): Secrets {
     chatApiUrl,
     chatAppId,
     chatAppSecret,
-    chatBotJid: process.env.ETHORA_CHAT_BOT_JID,
   };
 }
 
@@ -80,13 +79,16 @@ let secretsInstance: Secrets | null = null;
 /**
  * Gets or creates a singleton instance of secrets
  *
+ * @param overrides - Optional overrides for appId and appSecret
  * @returns Secrets configuration object
  */
-export function getSecrets(): Secrets {
-  if (!secretsInstance) {
-    secretsInstance = getSecretsSync();
+export function getSecrets(overrides?: Partial<Secrets>): Secrets {
+  if (!secretsInstance || overrides) {
+    const newSecrets = getSecretsSync(overrides);
+    if (!secretsInstance) {
+      secretsInstance = newSecrets;
+    }
+    return newSecrets;
   }
   return secretsInstance;
 }
-
-

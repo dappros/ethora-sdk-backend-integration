@@ -27,7 +27,6 @@ This guide will walk you through integrating the Ethora SDK into your existing N
   - `ETHORA_CHAT_API_URL`
   - `ETHORA_CHAT_APP_ID`
   - `ETHORA_CHAT_APP_SECRET`
-  - `ETHORA_CHAT_BOT_JID` (optional, for chatbot features)
 
 ## API Documentation (Swagger)
 
@@ -98,8 +97,6 @@ ETHORA_CHAT_API_URL=https://api.ethoradev.com
 ETHORA_CHAT_APP_ID=your_app_id_here
 ETHORA_CHAT_APP_SECRET=your_app_secret_here
 
-# Optional (for chatbot features)
-ETHORA_CHAT_BOT_JID=your_bot_jid@domain.com
 ```
 
 ### Step 2: Load Environment Variables
@@ -558,13 +555,6 @@ async function setupWorkspaceChat(
     // 3. Grant access to all users
     await chatService.grantUserAccessToChatRoom(workspaceId, userIds);
 
-    // 4. Grant chatbot access (if configured)
-    try {
-      await chatService.grantChatbotAccessToChatRoom(workspaceId);
-    } catch (error) {
-      console.warn('Chatbot access not configured or failed');
-    }
-
     return { success: true };
   } catch (error) {
     console.error('Failed to setup workspace chat:', error);
@@ -919,19 +909,6 @@ await sdk.removeUserAccessFromChatRoom("workspace-123", "user-456");
 ```
 
 **Note:** User IDs are automatically prefixed with `{appId}_` if they don't already have the prefix.
-
----
-
-#### `grantChatbotAccessToChatRoom(chatId: UUID): Promise<ApiResponse>`
-
-Grants chatbot access to a chat room.
-
-**Parameters:**
-- `chatId` (UUID): The unique identifier of the chat/workspace
-
-**Returns:** Promise resolving to the API response
-
-**Requires:** `ETHORA_CHAT_BOT_JID` environment variable to be set
 
 ---
 

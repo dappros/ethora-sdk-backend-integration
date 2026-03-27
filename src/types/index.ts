@@ -78,6 +78,53 @@ export interface BatchCreateUsersRequest {
   }>;
 }
 
+export interface CreateAppTokenRequest {
+  label?: string;
+}
+
+export interface RotateAppTokenRequest {
+  label?: string;
+}
+
+export interface ProvisionRoomRequest {
+  title?: string;
+  pinned?: boolean;
+  [key: string]: unknown;
+}
+
+export interface ProvisionAppRequest {
+  rooms?: ProvisionRoomRequest[];
+  [key: string]: unknown;
+}
+
+export interface UpdateAppBotRequest {
+  status?: string;
+  trigger?: string;
+  prompt?: string;
+  greetingMessage?: string;
+  chatId?: string;
+  isRAG?: boolean;
+  botFirstName?: string;
+  botLastName?: string;
+  [key: string]: unknown;
+}
+
+export interface CreateAppBroadcastRequest {
+  text: string;
+  allRooms?: boolean;
+  chatNames?: string[];
+  chatIds?: string[];
+  metadata?: Record<string, unknown>;
+  dryRun?: boolean;
+  [key: string]: unknown;
+}
+
+export interface ListAppChatsQueryParams {
+  limit?: number;
+  offset?: number;
+  includeMembers?: boolean;
+}
+
 /**
  * Chat room creation request payload
  */
@@ -200,11 +247,6 @@ export interface ChatRepository {
   ): Promise<ApiResponse>;
 
   /**
-   * Grants chatbot access to a chat room
-   */
-  grantChatbotAccessToChatRoom(chatId: UUID): Promise<ApiResponse>;
-
-  /**
    * Removes a user's access to a chat room
    *
    * @param chatId - The unique identifier of the chat
@@ -291,6 +333,33 @@ export interface ChatRepository {
 
   deleteApp(appId: UUID): Promise<ApiResponse>;
 
+  listAppTokens(appId: UUID): Promise<ApiResponse>;
+
+  createAppToken(appId: UUID, payload?: CreateAppTokenRequest): Promise<ApiResponse>;
+
+  revokeAppToken(appId: UUID, tokenId: UUID): Promise<ApiResponse>;
+
+  rotateAppToken(
+    appId: UUID,
+    tokenId: UUID,
+    payload?: RotateAppTokenRequest,
+  ): Promise<ApiResponse>;
+
+  provisionApp(appId: UUID, payload?: ProvisionAppRequest): Promise<ApiResponse>;
+
+  getAppBot(appId: UUID): Promise<ApiResponse>;
+
+  updateAppBot(appId: UUID, payload: UpdateAppBotRequest): Promise<ApiResponse>;
+
+  broadcastToAppChats(
+    appId: UUID,
+    payload: CreateAppBroadcastRequest,
+  ): Promise<ApiResponse>;
+
+  getAppBroadcastJob(appId: UUID, jobId: UUID): Promise<ApiResponse>;
+
+  getAppUserByXmppUsername(xmppUsername: UUID): Promise<ApiResponse>;
+
   createUsersInApp(appId: UUID, payload: BatchCreateUsersRequest): Promise<ApiResponse>;
 
   getUsersBatchJob(appId: UUID, jobId: UUID): Promise<ApiResponse>;
@@ -301,6 +370,11 @@ export interface ChatRepository {
     appId: UUID,
     chatId: UUID,
     roomData?: Record<string, unknown>
+  ): Promise<ApiResponse>;
+
+  listChatsInApp(
+    appId: UUID,
+    params?: ListAppChatsQueryParams,
   ): Promise<ApiResponse>;
 
   deleteChatRoomInApp(appId: UUID, chatId: UUID): Promise<ApiResponse>;

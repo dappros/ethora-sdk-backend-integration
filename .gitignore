@@ -33,4 +33,6 @@ examples/healthcare-insurance/logs/
 coverage/
 .nyc_output/
 
+sdk-playground/
+
 

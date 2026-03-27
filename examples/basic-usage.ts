@@ -36,11 +36,6 @@ export async function setupWorkspaceChatExample() {
       console.log(`✓ Access granted to ${userId}`);
     }
 
-    // 4. Grant chatbot access
-    console.log('Granting chatbot access...');
-    await chatRepo.grantChatbotAccessToChatRoom(workspaceId);
-    console.log('✓ Chatbot access granted');
-
     return { success: true };
   } catch (error) {
     console.error('Error setting up workspace chat:', error);
@@ -130,6 +125,5 @@ export function getChatRoomNameExample(workspaceId: string) {
 // }
 //
 // main().catch(console.error);
-
 
 

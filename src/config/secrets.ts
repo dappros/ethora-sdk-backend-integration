@@ -14,8 +14,6 @@ export interface Secrets {
   chatAppId: string;
   /** Secret key for JWT token generation */
   chatAppSecret: string;
-  /** Chatbot JID (optional) */
-  chatBotJid?: string;
 }
 
 /**
@@ -70,7 +68,6 @@ export function getSecretsSync(overrides?: Partial<Secrets>): Secrets {
     chatApiUrl,
     chatAppId,
     chatAppSecret,
-    chatBotJid: overrides?.chatBotJid || process.env.ETHORA_CHAT_BOT_JID,
   };
 }
 

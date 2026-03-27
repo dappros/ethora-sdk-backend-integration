@@ -6,7 +6,6 @@ const assert = require('node:assert/strict');
 process.env.ETHORA_CHAT_API_URL = 'https://api.messenger-dev.vitall.com';
 process.env.ETHORA_CHAT_APP_ID = 'app123';
 process.env.ETHORA_CHAT_APP_SECRET = 'secret123';
-process.env.ETHORA_CHAT_BOT_JID = 'chatbot@xmpp.ethoradev.com';
 
 const { EthoraSDKService } = require('../dist/repositories/EthoraSDKService');
 
@@ -15,13 +14,10 @@ function okResponse(data = { ok: true }) {
 }
 
 function axiosError(status, data) {
-  return {
-    isAxiosError: true,
-    response: {
-      status,
-      data,
-    },
-  };
+  const error = new Error(`HTTP ${status}`);
+  error.isAxiosError = true;
+  error.response = { status, data };
+  return error;
 }
 
 test('createChatName returns short and full chat names', () => {
@@ -34,7 +30,7 @@ test('createChatName returns short and full chat names', () => {
   assert.equal(fullName, 'app123_room-1@conference.xmpp.ethoradev.com');
 });
 
-test('createUser sends v2 request and prefixes user uuid with appId', async () => {
+test('createUser sends v2 request and keeps uuid as provided', async () => {
   const service = new EthoraSDKService();
   let captured;
 
@@ -54,12 +50,12 @@ test('createUser sends v2 request and prefixes user uuid with appId', async () =
     captured.url,
     'https://api.messenger-dev.vitall.com/v2/users/batch',
   );
-  assert.equal(captured.data.usersList[0].uuid, 'app123_user-1');
+  assert.equal(captured.data.usersList[0].uuid, 'user-1');
   assert.equal(captured.data.usersList[0].lastName, 'User');
   assert.equal(captured.data.usersList[0].role, undefined);
 });
 
-test('createChatRoom sends v2 payload', async () => {
+test('all requests include Authorization Bearer and x-custom-token headers', async () => {
   const service = new EthoraSDKService();
   let captured;
 
@@ -68,15 +64,37 @@ test('createChatRoom sends v2 payload', async () => {
     return okResponse();
   };
 
-  await service.createChatRoom('room-2', { title: 'Room 2', type: 'group' });
+  await service.getUsers();
 
-  assert.equal(captured.method, 'POST');
-  assert.equal(captured.url, 'https://api.messenger-dev.vitall.com/v2/chats');
-  assert.equal(captured.data.uuid, 'room-2');
-  assert.equal(captured.data.title, 'Room 2');
+  assert.equal(typeof captured.headers.Authorization, 'string');
+  assert.equal(captured.headers.Authorization.startsWith('Bearer '), true);
+  assert.equal(typeof captured.headers['x-custom-token'], 'string');
+  assert.ok(captured.headers['x-custom-token'].length > 10);
 });
 
-test('grantUserAccessToChatRoom sends prefixed members to v2 endpoint', async () => {
+test('grantUserAccessToChatRoom normalizes raw and prefixed members', async () => {
+  const service = new EthoraSDKService();
+  const captures = [];
+
+  service.httpClient.request = async (config) => {
+    captures.push(config);
+    return okResponse();
+  };
+
+  await service.grantUserAccessToChatRoom('room-3', 'u1');
+  await service.grantUserAccessToChatRoom('room-3', ['u1', 'app123_u2']);
+
+  assert.equal(
+    captures[0].url,
+    'https://api.messenger-dev.vitall.com/v2/chats/users-access',
+  );
+  assert.deepEqual(captures[0].data.members, ['app123_u1']);
+  assert.equal(captures[0].data.chatName, 'app123_room-3');
+
+  assert.deepEqual(captures[1].data.members, ['app123_u1', 'app123_u2']);
+});
+
+test('removeUserAccessFromChatRoom uses v2 users-access endpoint', async () => {
   const service = new EthoraSDKService();
   let captured;
 
@@ -85,110 +103,26 @@ test('grantUserAccessToChatRoom sends prefixed members to v2 endpoint', async ()
     return okResponse();
   };
 
-  await service.grantUserAccessToChatRoom('room-3', ['u1', 'app123_u2']);
+  await service.removeUserAccessFromChatRoom('room-5', ['u1', 'app123_u2']);
 
-  assert.equal(captured.method, 'POST');
+  assert.equal(captured.method, 'DELETE');
   assert.equal(
     captured.url,
     'https://api.messenger-dev.vitall.com/v2/chats/users-access',
   );
   assert.deepEqual(captured.data.members, ['app123_u1', 'app123_u2']);
-  assert.equal(captured.data.chatName, 'app123_room-3');
-});
-
-test('grantChatbotAccessToChatRoom uses chatbot jid username', async () => {
-  const service = new EthoraSDKService();
-  let captured;
-
-  service.httpClient.request = async (config) => {
-    captured = config;
-    return okResponse();
-  };
-
-  await service.grantChatbotAccessToChatRoom('room-4');
-
-  assert.equal(captured.method, 'POST');
-  assert.equal(
-    captured.url,
-    'https://api.messenger-dev.vitall.com/v2/chats/users-access',
-  );
-  assert.deepEqual(captured.data.members, ['app123_chatbot']);
-});
-
-test('grantChatbotAccessToChatRoom throws if chatbot jid is not configured', async () => {
-  const service = new EthoraSDKService();
-  service.secrets.chatBotJid = undefined;
-
-  await assert.rejects(
-    () => service.grantChatbotAccessToChatRoom('room-4'),
-    /Chatbot JID not configured/,
-  );
-});
-
-test('removeUserAccessFromChatRoom uses primary v2 usersAccess/remove endpoint', async () => {
-  const service = new EthoraSDKService();
-  let captured;
-
-  service.httpClient.request = async (config) => {
-    captured = config;
-    return okResponse();
-  };
-
-  await service.removeUserAccessFromChatRoom('room-5', 'u1');
-
-  assert.equal(captured.method, 'DELETE');
-  assert.equal(
-    captured.url,
-    'https://api.messenger-dev.vitall.com/v2/chats/usersAccess/remove',
-  );
-  assert.deepEqual(captured.data.members, ['app123_u1']);
-});
-
-test('removeUserAccessFromChatRoom falls back to legacy endpoint on 404/405', async () => {
-  const service = new EthoraSDKService();
-  const calls = [];
-
-  service.httpClient.request = async (config) => {
-    calls.push(config);
-
-    if (calls.length === 1) {
-      throw axiosError(404, { ok: false });
-    }
-
-    return okResponse({ ok: true, fallback: true });
-  };
-
-  const result = await service.removeUserAccessFromChatRoom('room-6', 'u2');
-
-  assert.equal(calls.length, 2);
-  assert.equal(
-    calls[0].url,
-    'https://api.messenger-dev.vitall.com/v2/chats/usersAccess/remove',
-  );
-  assert.equal(
-    calls[1].url,
-    'https://api.messenger-dev.vitall.com/v2/chats/users-access',
-  );
-  assert.deepEqual(result, { ok: true, fallback: true });
 });
 
 test('deleteUsers uses v1 endpoint and handles not-found 422 gracefully', async () => {
   const service = new EthoraSDKService();
-  let callCount = 0;
 
   service.httpClient.request = async (config) => {
-    callCount += 1;
-
-    if (callCount === 1) {
-      assert.equal(
-        config.url,
-        'https://api.messenger-dev.vitall.com/v1/users/batch',
-      );
-      assert.deepEqual(config.data, { usersIdList: ['app123_u1'] });
-      throw axiosError(422, 'User not found');
-    }
-
-    return okResponse();
+    assert.equal(
+      config.url,
+      'https://api.messenger-dev.vitall.com/v1/users/batch',
+    );
+    assert.deepEqual(config.data, { usersIdList: ['u1'] });
+    throw axiosError(422, 'User not found');
   };
 
   const result = await service.deleteUsers(['u1']);
@@ -254,7 +188,7 @@ test('updateUsers validates limits and filters unsupported fields', async () => 
   ]);
 });
 
-test('getUsers builds correct v2 query params', async () => {
+test('getUsers builds correct v2 query params for no/partial/full/encoded variants', async () => {
   const service = new EthoraSDKService();
   const urls = [];
 
@@ -267,6 +201,13 @@ test('getUsers builds correct v2 query params', async () => {
   await service.getUsers({ chatName: 'app123_room-8' });
   await service.getUsers({ xmppUsername: 'app123_u8' });
   await service.getUsers({ chatName: 'a b', xmppUsername: 'u+1' });
+  await service.getUsers({
+    chatName: 'app123_room-9',
+    xmppUsername: 'app123_u9',
+    userId: 'mongo-id-9',
+    limit: 25,
+    offset: 50,
+  });
 
   assert.equal(urls[0], 'https://api.messenger-dev.vitall.com/v2/chats/users');
   assert.equal(
@@ -281,6 +222,10 @@ test('getUsers builds correct v2 query params', async () => {
     urls[3],
     'https://api.messenger-dev.vitall.com/v2/chats/users?chatName=a%20b&xmppUsername=u%2B1',
   );
+  assert.equal(
+    urls[4],
+    'https://api.messenger-dev.vitall.com/v2/chats/users?chatName=app123_room-9&xmppUsername=app123_u9&userId=mongo-id-9&limit=25&offset=50',
+  );
 });
 
 test('getUserChats constructs correct v2 URL for user chats', async () => {
@@ -293,7 +238,11 @@ test('getUserChats constructs correct v2 URL for user chats', async () => {
   };
 
   await service.getUserChats('u1');
-  await service.getUserChats('u2', { limit: 10, offset: 5, includeMembers: true });
+  await service.getUserChats('u2', {
+    limit: 10,
+    offset: 5,
+    includeMembers: true,
+  });
 
   assert.equal(
     urls[0],
@@ -314,12 +263,11 @@ test('updateChatRoom constructs correct v2 URL and payload', async () => {
     return okResponse({ ok: true });
   };
 
-  // Test with short ID (requires prefixing)
   await service.updateChatRoom('room-1', { title: 'New Room 1' });
-  // Test with already prefixed ID
   await service.updateChatRoom('app123_room-2', { description: 'Desc 2' });
-  // Test with full JID
-  await service.updateChatRoom('app123_room-3@conference.domain.com', { title: 'New Room 3' });
+  await service.updateChatRoom('app123_room-3@conference.domain.com', {
+    title: 'New Room 3',
+  });
 
   assert.equal(captures[0].method, 'PATCH');
   assert.equal(
@@ -337,4 +285,107 @@ test('updateChatRoom constructs correct v2 URL and payload', async () => {
     captures[2].url,
     'https://api.messenger-dev.vitall.com/v2/apps/app123/chats/app123_room-3@conference.domain.com',
   );
+});
+
+test('app-level endpoints cover no/partial/full query and payload variants', async () => {
+  const service = new EthoraSDKService();
+  const calls = [];
+
+  service.httpClient.request = async (config) => {
+    calls.push(config);
+    return okResponse({ ok: true });
+  };
+
+  await service.listApps();
+  await service.listApps({ limit: 10 });
+  await service.listApps({ limit: 10, offset: 5, order: 'desc', orderBy: 'createdAt' });
+  await service.getApp('app-1');
+
+  await service.listAppTokens('app-1');
+  await service.createAppToken('app-1');
+  await service.createAppToken('app-1', { label: 'Primary token' });
+  await service.revokeAppToken('app-1', 'token-1');
+  await service.rotateAppToken('app-1', 'token-1');
+  await service.rotateAppToken('app-1', 'token-1', { label: 'Rotated' });
+
+  await service.provisionApp('app-1');
+  await service.provisionApp('app-1', { rooms: [{ title: 'General', pinned: true }] });
+
+  await service.getAppBot('app-1');
+  await service.getAppBroadcastJob('app-1', 'job-1');
+
+  await service.getAppUserByXmppUsername('app-1_user+1@example');
+
+  await service.createUsersInApp('app-1', {
+    usersList: [
+      {
+        email: 'u1@example.com',
+        firstName: 'U',
+        lastName: 'One',
+      },
+    ],
+  });
+  await service.getUsersBatchJob('app-1', 'job-2');
+  await service.deleteUsersInApp('app-1', ['u1', 'u2']);
+
+  await service.listChatsInApp('app-1');
+  await service.listChatsInApp('app-1', { limit: 20, offset: 10, includeMembers: true });
+  await service.createChatRoomInApp('app-1', 'room-1', { title: 'Room 1' });
+  await service.deleteChatRoomInApp('app-1', 'room-1');
+
+  await service.grantUserAccessToChatRoomInApp('app-1', 'room-1', 'u1');
+  await service.grantUserAccessToChatRoomInApp('app-1', 'app-1_room-1', ['u1', 'app-1_u2']);
+  await service.removeUserAccessFromChatRoomInApp('app-1', 'room-1', ['u1', 'app-1_u2']);
+
+  await service.getUserChatsInApp('app-1', 'u1', { limit: 5, offset: 1, includeMembers: false });
+  await service.updateChatRoomInApp('app-1', 'room-1', { title: 'Updated' });
+
+  assert.equal(calls[0].url, 'https://api.messenger-dev.vitall.com/v2/apps');
+  assert.equal(calls[1].url, 'https://api.messenger-dev.vitall.com/v2/apps?limit=10');
+  assert.equal(
+    calls[2].url,
+    'https://api.messenger-dev.vitall.com/v2/apps?limit=10&offset=5&order=desc&orderBy=createdAt',
+  );
+
+  assert.equal(calls.find((c) => c.url.includes('/tokens') && c.method === 'POST').data.label, undefined);
+  assert.equal(
+    calls.find((c) => c.url.endsWith('/tokens') && c.method === 'POST' && c.data.label === 'Primary token').data.label,
+    'Primary token',
+  );
+
+  const encodedLookup = calls.find((c) => c.url.includes('/v1/apps/users/'));
+  assert.equal(
+    encodedLookup.url,
+    'https://api.messenger-dev.vitall.com/v1/apps/users/app-1_user%2B1%40example',
+  );
+
+  const listChatsFull = calls.find(
+    (c) =>
+      c.method === 'GET' &&
+      c.url ===
+        'https://api.messenger-dev.vitall.com/v2/apps/app-1/chats?limit=20&offset=10&includeMembers=true',
+  );
+  assert.ok(listChatsFull);
+
+  const grantInApp = calls.find(
+    (c) =>
+      c.method === 'POST' &&
+      c.url === 'https://api.messenger-dev.vitall.com/v2/apps/app-1/chats/users-access' &&
+      c.data.chatName === 'app-1_room-1' &&
+      c.data.members.length === 1,
+  );
+  assert.deepEqual(grantInApp.data.members, ['app-1_u1']);
+
+  const grantInAppPrefixed = calls.find(
+    (c) =>
+      c.method === 'POST' &&
+      c.url === 'https://api.messenger-dev.vitall.com/v2/apps/app-1/chats/users-access' &&
+      c.data.members.length === 2,
+  );
+  assert.deepEqual(grantInAppPrefixed.data.members, ['app-1_u1', 'app-1_u2']);
+});
+
+test('grantChatbotAccessToChatRoom is removed from public service API', () => {
+  const service = new EthoraSDKService();
+  assert.equal(typeof service.grantChatbotAccessToChatRoom, 'undefined');
 });

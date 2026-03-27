@@ -24,6 +24,12 @@ import type {
   CreateAppRequest,
   ListAppsQueryParams,
   BatchCreateUsersRequest,
+  CreateAppTokenRequest,
+  RotateAppTokenRequest,
+  ProvisionAppRequest,
+  UpdateAppBotRequest,
+  CreateAppBroadcastRequest,
+  ListAppChatsQueryParams,
 } from '../types';
 import {
   getSecrets,
@@ -102,8 +108,10 @@ export class EthoraSDKService implements ChatRepository {
    */
   private getHeaders(): Record<string, string> {
     logger.debug('Retrieving headers for a server-to-server API call');
+    const serverToken = createServerToken(this.secrets);
     return {
-      'x-custom-token': createServerToken(this.secrets),
+      Authorization: `Bearer ${serverToken}`,
+      'x-custom-token': serverToken,
     };
   }
 
@@ -123,6 +131,23 @@ export class EthoraSDKService implements ChatRepository {
       return userIdStr.startsWith(`${appIdStr}_`) ? userIdStr : `${appIdStr}_${userIdStr}`;
     };
     return Array.isArray(userId) ? userId.map(normalize) : [normalize(userId)];
+  }
+
+  private buildQueryString(params?: object): string {
+    if (!params) {
+      return '';
+    }
+
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value === undefined || value === null) {
+        continue;
+      }
+      query.set(key, String(value));
+    }
+
+    const encoded = query.toString();
+    return encoded ? `?${encoded}` : '';
   }
 
   /**
@@ -353,30 +378,6 @@ export class EthoraSDKService implements ChatRepository {
       url: grantUrl,
       data: payload,
     });
-  }
-
-  /**
-   * Grants chatbot access to a chat room
-   *
-   * @param chatId - The unique identifier of the chat
-   * @returns The API response
-   */
-  async grantChatbotAccessToChatRoom(chatId: UUID): Promise<ApiResponse> {
-    logger.info(`Granting chatbot access to chat room ${chatId}`);
-
-    if (!this.secrets.chatBotJid) {
-      const error = new Error(
-        'Chatbot JID not configured. Set ETHORA_CHAT_BOT_JID environment variable.',
-      );
-      logger.error('Cannot grant chatbot access', error);
-      throw error;
-    }
-
-    // Extract username from JID (format: "username@domain" -> "username")
-    const chatbotUsername = this.secrets.chatBotJid.split('@')[0];
-
-    // Use the same grant access method with chatbot JID
-    return this.grantUserAccessToChatRoom(chatId, chatbotUsername);
   }
 
   /**
@@ -722,12 +723,7 @@ export class EthoraSDKService implements ChatRepository {
   }
 
   async listApps(params?: ListAppsQueryParams): Promise<ApiResponse> {
-    const query = new URLSearchParams();
-    if (params?.limit !== undefined) query.set('limit', String(params.limit));
-    if (params?.offset !== undefined) query.set('offset', String(params.offset));
-    if (params?.order) query.set('order', params.order);
-    if (params?.orderBy) query.set('orderBy', params.orderBy);
-    const url = `${this.baseEthoraUrl}/v2/apps${query.toString() ? `?${query.toString()}` : ''}`;
+    const url = `${this.baseEthoraUrl}/v2/apps${this.buildQueryString(params)}`;
     return this.makeRequest<ApiResponse>({ method: 'GET', url });
   }
 
@@ -750,6 +746,91 @@ export class EthoraSDKService implements ChatRepository {
     return this.makeRequest<ApiResponse>({
       method: 'DELETE',
       url: `${this.baseEthoraUrl}/v2/apps/${appId}`,
+    });
+  }
+
+  async listAppTokens(appId: UUID): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'GET',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/tokens`,
+    });
+  }
+
+  async createAppToken(
+    appId: UUID,
+    payload?: CreateAppTokenRequest,
+  ): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'POST',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/tokens`,
+      data: payload || {},
+    });
+  }
+
+  async revokeAppToken(appId: UUID, tokenId: UUID): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'DELETE',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/tokens/${tokenId}`,
+    });
+  }
+
+  async rotateAppToken(
+    appId: UUID,
+    tokenId: UUID,
+    payload?: RotateAppTokenRequest,
+  ): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'POST',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/tokens/${tokenId}/rotate`,
+      data: payload || {},
+    });
+  }
+
+  async provisionApp(appId: UUID, payload?: ProvisionAppRequest): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'POST',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/provision`,
+      data: payload || {},
+    });
+  }
+
+  async getAppBot(appId: UUID): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'GET',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/bot`,
+    });
+  }
+
+  async updateAppBot(appId: UUID, payload: UpdateAppBotRequest): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'PUT',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/bot`,
+      data: payload,
+    });
+  }
+
+  async broadcastToAppChats(
+    appId: UUID,
+    payload: CreateAppBroadcastRequest,
+  ): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'POST',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/chats/broadcast`,
+      data: payload,
+    });
+  }
+
+  async getAppBroadcastJob(appId: UUID, jobId: UUID): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'GET',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/chats/broadcast/${jobId}`,
+    });
+  }
+
+  async getAppUserByXmppUsername(xmppUsername: UUID): Promise<ApiResponse> {
+    return this.makeRequest<ApiResponse>({
+      method: 'GET',
+      url: `${this.baseEthoraUrl}/v1/apps/users/${encodeURIComponent(String(xmppUsername))}`,
     });
   }
 
@@ -791,6 +872,17 @@ export class EthoraSDKService implements ChatRepository {
       method: 'POST',
       url: `${this.baseEthoraUrl}/v2/apps/${appId}/chats`,
       data: payload,
+    });
+  }
+
+  async listChatsInApp(
+    appId: UUID,
+    params?: ListAppChatsQueryParams,
+  ): Promise<ApiResponse> {
+    const query = this.buildQueryString(params);
+    return this.makeRequest<ApiResponse>({
+      method: 'GET',
+      url: `${this.baseEthoraUrl}/v2/apps/${appId}/chats${query}`,
     });
   }
 
