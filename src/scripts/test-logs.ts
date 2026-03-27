@@ -104,6 +104,12 @@ async function runFullCycle(results: StepResult[]): Promise<void> {
     );
 
     await runStep(
+      `GET /v2/apps/${targetAppId}/chats (full-cycle listChatsInApp)`,
+      () => chatRepo.listChatsInApp(targetAppId, { limit: 10, offset: 0, includeMembers: true }),
+      results,
+    );
+
+    await runStep(
       'PATCH /v2/chats/users',
       () =>
         chatRepo.updateUsers([
@@ -119,6 +125,12 @@ async function runFullCycle(results: StepResult[]): Promise<void> {
     await runStep(
       `GET /v2/apps/${targetAppId}/users/${appUserId}/chats`,
       () => chatRepo.getUserChats(appUserId, { limit: 5, offset: 0, includeMembers: true }),
+      results,
+    );
+
+    await runStep(
+      `GET /v2/apps/${targetAppId}/users/${appUserId}/chats (getUserChatsInApp)`,
+      () => chatRepo.getUserChatsInApp(targetAppId, appUserId, { limit: 5, offset: 0, includeMembers: true }),
       results,
     );
 
