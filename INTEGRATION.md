@@ -30,10 +30,10 @@ This guide will walk you through integrating the Ethora SDK into your existing N
 
 Ethora exposes Swagger UI from every running backend instance at:
 
-- **Hosted (Ethora main)**: `https://api.ethoradev.com/api-docs/`
-- **Enterprise/self-hosted**: `https://api.<your-domain>/api-docs/` (example: `https://api.yourdomain.com/api-docs/`)
+- **Hosted (Ethora main)**: [`https://api.chat.ethora.com/api-docs/#/`](https://api.chat.ethora.com/api-docs/#/) — canonical, regenerated automatically from production.
+- **Enterprise / self-hosted**: `https://api.<your-domain>/api-docs/` (example: `https://api.yourdomain.com/api-docs/`)
 
-If you are running a separate staging instance, the same pattern applies (e.g. `https://api.asterotoken.com/api-docs/`).
+If you are running a separate staging instance, the same pattern applies (e.g. `https://api.chat-qa.ethora.com/api-docs/` for Ethora QA).
 
 ## Tenant Admin / B2B Endpoints
 
@@ -91,7 +91,7 @@ Add the following environment variables to your `.env` file or your environment 
 
 ```bash
 # Required
-ETHORA_CHAT_API_URL=https://api.ethoradev.com
+ETHORA_CHAT_API_URL=https://api.chat.ethora.com
 ETHORA_CHAT_APP_ID=your_app_id_here
 ETHORA_CHAT_APP_SECRET=your_app_secret_here
 
@@ -742,7 +742,7 @@ async function createUserTyped(
 **Solution:** Ensure all required environment variables are set:
 
 ```bash
-ETHORA_CHAT_API_URL=https://api.ethoradev.com
+ETHORA_CHAT_API_URL=https://api.chat.ethora.com
 ETHORA_CHAT_APP_ID=your_app_id
 ETHORA_CHAT_APP_SECRET=your_app_secret
 ```

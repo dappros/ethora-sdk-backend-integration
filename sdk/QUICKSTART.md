@@ -15,7 +15,7 @@ npm run build
 Create a `.env` file or set the following environment variables:
 
 ```bash
-ETHORA_CHAT_API_URL=https://api.ethoradev.com
+ETHORA_CHAT_API_URL=https://api.chat.ethora.com
 ETHORA_CHAT_APP_ID=your_app_id
 ETHORA_CHAT_APP_SECRET=your_app_secret
 ```

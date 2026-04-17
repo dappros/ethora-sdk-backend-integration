@@ -6,14 +6,14 @@ This example shows how to integrate Ethora chat into an existing healthcare/insu
 
 - Domain: case/claim/encounter ID → `workspaceId` used for chat room name.
 - Users: Admin, Practitioner, Patient → `userId` matches your backend’s user identifier.
-- Room name (JID): `<appId>_<workspaceId>@conference.xmpp.ethoradev.com` from `createChatName(workspaceId, true)`.
+- Room name (JID): `<appId>_<workspaceId>@conference.xmpp.chat.ethora.com` from `createChatName(workspaceId, true)`.
 - Auth: server-side JWTs signed with `ETHORA_CHAT_APP_SECRET` via `createChatUserJwtToken(userId)`.
 
 ## Prerequisites
 
 - Node.js 18+
 - Ethora app credentials set as env vars:
-  - `ETHORA_CHAT_API_URL` (e.g., `https://api.ethoradev.com`)
+  - `ETHORA_CHAT_API_URL` (e.g., `https://api.chat.ethora.com`)
   - `ETHORA_CHAT_APP_ID`
   - `ETHORA_CHAT_APP_SECRET`
 - Ethora backend SDK (if you install it from npm instead of using this monorepo):
@@ -59,7 +59,7 @@ From the repo root:
 
 ```bash
 # Ensure env vars are set (replace with your Ethora app creds)
-export ETHORA_CHAT_API_URL=https://api.ethoradev.com
+export ETHORA_CHAT_API_URL=https://api.chat.ethora.com
 export ETHORA_CHAT_APP_ID=your_app_id
 export ETHORA_CHAT_APP_SECRET=your_app_secret
 
@@ -115,11 +115,11 @@ In your portal tab/component, fetch the client token for the logged-in user and 
   user={{ token: clientTokenFromBackend }}
   config={{
     xmppSettings: {
-      devServer: "wss://xmpp.ethoradev.com:5443/ws",
-      host: "xmpp.ethoradev.com",
-      conference: "conference.xmpp.ethoradev.com",
+      devServer: "wss://xmpp.chat.ethora.com:5443/ws",
+      host: "xmpp.chat.ethora.com",
+      conference: "conference.xmpp.chat.ethora.com",
     },
-    baseUrl: "https://api.ethoradev.com/v1",
+    baseUrl: "https://api.chat.ethora.com/v1",
     newArch: true,
     refreshTokens: { enabled: true },
   }}

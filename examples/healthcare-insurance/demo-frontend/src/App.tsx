@@ -181,11 +181,11 @@ function ChatContent({
             roomJID={roomJidToUse}
             config={{
               xmppSettings: {
-                devServer: "wss://xmpp.ethoradev.com:5443/ws",
-                host: "xmpp.ethoradev.com",
-                conference: "conference.xmpp.ethoradev.com",
+                devServer: "wss://xmpp.chat.ethora.com:5443/ws",
+                host: "xmpp.chat.ethora.com",
+                conference: "conference.xmpp.chat.ethora.com",
               },
-              baseUrl: "https://api.ethoradev.com/v1",
+              baseUrl: "https://api.chat.ethora.com/v1",
               newArch: true,
               refreshTokens: { enabled: true },
               disableRooms: persona.role === "patient",

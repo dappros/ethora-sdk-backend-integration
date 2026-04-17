@@ -68,7 +68,7 @@ export class EthoraSDKService implements ChatRepository {
   /**
    * Generates a fully-qualified chat room JID from a chat ID
    *
-   * The JID is constructed in the format `<appId>_<chat_id>@conference.xmpp.ethoradev.com`.
+   * The JID is constructed in the format `<appId>_<chat_id>@conference.xmpp.chat.ethora.com`.
    * This method uses a static JID domain to provide a unique identifier for a chat room.
    *
    * @param chatId - The unique identifier of the chat

@@ -17,7 +17,7 @@ yarn add @ethora/sdk-backend
 ### 1. Set Environment Variables
 
 ```bash
-ETHORA_CHAT_API_URL=https://api.ethoradev.com
+ETHORA_CHAT_API_URL=https://api.chat.ethora.com
 ETHORA_CHAT_APP_ID=your_app_id
 ETHORA_CHAT_APP_SECRET=your_app_secret
 ```
@@ -79,7 +79,7 @@ Generates a fully-qualified chat room JID from a workspace ID.
 
 ```typescript
 const chatName = chatRepo.createChatName(workspaceId, true);
-// Returns: "appId_workspaceId@conference.xmpp.ethoradev.com"
+// Returns: "appId_workspaceId@conference.xmpp.chat.ethora.com"
 ```
 
 #### `createChatUserJwtToken(userId: UUID): string`
@@ -369,7 +369,7 @@ try {
   - Example: `"user-123"` becomes `"appId_user-123"` when granting access
   - If the user ID already starts with the app ID, no additional prefix is added
 - **Chat Room Names**: Follow the format `{appId}_{workspaceId}` (only room names are prefixed)
-- **Full JID Format**: `{appId}_{workspaceId}@conference.xmpp.ethoradev.com`
+- **Full JID Format**: `{appId}_{workspaceId}@conference.xmpp.chat.ethora.com`
 
 ### API Versioning
 

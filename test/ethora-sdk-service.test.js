@@ -27,7 +27,7 @@ test('createChatName returns short and full chat names', () => {
   const fullName = service.createChatName('room-1', true);
 
   assert.equal(shortName, 'app123_room-1');
-  assert.equal(fullName, 'app123_room-1@conference.xmpp.ethoradev.com');
+  assert.equal(fullName, 'app123_room-1@conference.xmpp.chat.ethora.com');
 });
 
 test('createUser sends v2 request and keeps uuid as provided', async () => {

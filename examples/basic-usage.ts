@@ -95,7 +95,7 @@ export function getChatRoomNameExample(workspaceId: string) {
   // Full JID format
   const fullJid = chatRepo.createChatName(workspaceId, true);
   console.log('Full JID:', fullJid);
-  // Output: "appId_workspaceId@conference.xmpp.ethoradev.com"
+  // Output: "appId_workspaceId@conference.xmpp.chat.ethora.com"
 
   // Short name format
   const shortName = chatRepo.createChatName(workspaceId, false);
